@@ -1,4 +1,4 @@
-# Kimai Compensation Equivalent Timecard
+# Kimai Pro Rata Time Export
 
 A Kimai plugin that generates a compensation-equivalent timecard from Kimai's recorded timesheet data. The purpose of the plugin is to support users who perform work for multiple projects that have different hourly compensation rates but must submit a single employer timecard using a single nominal/base hourly rate. The plugin transparently converts each actual timesheet duration into an equivalent duration at a configurable employer base rate, while preserving the immutability of Kimai's original records.
 

@@ -1,8 +1,8 @@
-# Kimai Compensation Equivalent Timecard
+# Kimai Pro Rata Time Export
 
 ## Software Design & Development Specification
 
-**Project:** Kimai Compensation Equivalent Timecard Plugin
+**Project:** Kimai Pro Rata Time Export Plugin
 **Repository:** Personal GitHub repository
 **Target Platform:** Self-hosted Kimai
 **Primary Language:** PHP
@@ -229,13 +229,13 @@ Do NOT modify Kimai core files.
 Suggested package name:
 
 ```text
-KimaiCompensationEquivalentBundle
+KimaiProRataTimeExportBundle
 ```
 
 Suggested namespace:
 
 ```text
-App\Plugin\CompensationEquivalent
+App\Plugin\ProRataTimeExport
 ```
 
 or another namespace consistent with the final repository/package naming.
