@@ -1,0 +1,33 @@
+# Composer
+vendor/
+composer.lock
+
+# Symfony
+var/
+.env.local
+.env.local.php
+.env.*.local
+
+# PHP-CS-Fixer
+.php-cs-fixer.cache
+
+# PHPUnit
+.phpunit.result.cache
+phpunit.xml
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Node (if needed for frontend tooling)
+node_modules/
+package-lock.json
+yarn.lock
+
+# Local configuration
+.env.local
+.env.*.local
