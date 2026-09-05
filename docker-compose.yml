@@ -1,0 +1,48 @@
+# Local Kimai development environment for the Pro Rata Time Export
+# plugin (spec §56). There is no live instance to test against, so this is the
+# reference target.
+#
+# Defaults to Kimai 2.40.0, the oldest supported version. Set KIMAI_TAG=2.65.0
+# to verify against the newest. See docs/kimai-version-notes.md.
+#
+# Usage: see README.md "Development environment".
+
+services:
+  database:
+    image: mariadb:10.11
+    environment:
+      MARIADB_DATABASE: kimai
+      MARIADB_USER: kimai
+      MARIADB_PASSWORD: ${DB_PASSWORD:-kimai}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-kimai}
+    command: --default-storage-engine=InnoDB
+    volumes:
+      - database:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
+  kimai:
+    # 2.40.0 publishes apache-/fpm- prefixed tags; 2.65.0 publishes a bare tag.
+    image: kimai/kimai2:${KIMAI_TAG:-apache-2.40.0}
+    depends_on:
+      database:
+        condition: service_healthy
+    ports:
+      - "${KIMAI_PORT:-8001}:8001"
+    environment:
+      DATABASE_URL: "mysql://kimai:${DB_PASSWORD:-kimai}@database/kimai?charset=utf8mb4&serverVersion=10.11.0-MariaDB"
+      ADMINMAIL: ${ADMIN_MAIL:-admin@kimai.local}
+      ADMINPASS: ${ADMIN_PASSWORD:-changemeplease}
+      TRUSTED_HOSTS: localhost
+    volumes:
+      # The plugin directory name must equal the bundle class name, so this repo
+      # mounts as ProRataTimeExportBundle — see docs/kimai-version-notes.md §3.
+      - ./:/opt/kimai/var/plugins/ProRataTimeExportBundle:ro
+      - kimai_data:/opt/kimai/var/data
+
+volumes:
+  database:
+  kimai_data:

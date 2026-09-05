@@ -1,0 +1,18 @@
+services:
+    _defaults:
+        autowire: true
+        # autoconfigure does two jobs here:
+        #  - it tags ProRataTimeExportBundle with App\Plugin\PluginInterface,
+        #    which is how PluginManager (and so System -> Plugins) sees the plugin.
+        #    The bundle class must therefore stay registered as a service.
+        #  - it will tag exporters implementing App\Export\TimesheetExportInterface
+        #    or App\Export\RendererInterface, so no explicit tag is needed.
+        # See docs/kimai-version-notes.md §3 and §4.
+        autoconfigure: true
+        public: false
+
+    KimaiPlugin\ProRataTimeExportBundle\:
+        resource: '../../*'
+        exclude:
+            - '../../Resources/'
+            - '../../Tests/'
