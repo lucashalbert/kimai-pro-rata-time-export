@@ -2,7 +2,7 @@
 
 A Kimai plugin that generates a compensation-equivalent timecard from Kimai's recorded timesheet data. The purpose of the plugin is to support users who perform work for multiple projects that have different hourly compensation rates but must submit a single employer timecard using a single nominal/base hourly rate. The plugin transparently converts each actual timesheet duration into an equivalent duration at a configurable employer base rate, while preserving the immutability of Kimai's original records.
 
-**Status:** Partial implementation. The bundle registers, `IntervalGenerator` is implemented, the exact-money value object is implemented, and the rate resolver is implemented; the remaining compensation domain services, exporters and UI are not implemented yet. See `.specs/kimai-pro-rata-time-export_SPEC.md` for the complete technical specification.
+**Status:** Partial implementation. The bundle registers, `IntervalGenerator` and `DurationScaler` are implemented, the exact-money value object is implemented, and the rate resolver is implemented; the remaining compensation domain services, exporters and UI are not implemented yet. See `.specs/kimai-pro-rata-time-export_SPEC.md` for the complete technical specification.
 
 ## Immutability Guarantee
 
@@ -12,7 +12,7 @@ All calculations are read-only transformations. Source Kimai data remains unchan
 
 ## Compatibility
 
-Targets **Kimai 2.40.0 through 2.65.0** on PHP 8.2+.
+Targets **Kimai 2.40.0 through 2.65.0** on PHP 8.2+ with the PHP BCMath extension.
 
 Every extension point the plugin uses — the `Timesheet` entity, the plugin/bundle registration mechanism, and the export renderer interfaces — is identical across that range, so there is no version-detection code. `composer.json` declares `extra.kimai.require: 24000` (Kimai's minimum-version metadata); Kimai does not enforce an upper bound.
 
