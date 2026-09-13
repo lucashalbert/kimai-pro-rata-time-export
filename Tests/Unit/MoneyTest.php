@@ -14,7 +14,6 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit;
 use InvalidArgumentException;
 use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
 use PHPUnit\Framework\TestCase;
-use TypeError;
 
 final class MoneyTest extends TestCase
 {
@@ -55,9 +54,18 @@ final class MoneyTest extends TestCase
 
     public function testMultiplyRejectsFloatFactors(): void
     {
-        $this->expectException(TypeError::class);
+        $this->expectException(InvalidArgumentException::class);
 
         Money::fromDecimalString('150000.00')->multiply(100 / 150);
+    }
+
+    public function testMultiplyRejectsFloatFactorsFromNonStrictCallers(): void
+    {
+        $multiplyFromNonStrictCaller = require __DIR__ . '/../Fixtures/non_strict_money_multiply.php';
+
+        $this->expectException(InvalidArgumentException::class);
+
+        $multiplyFromNonStrictCaller(Money::fromDecimalString('150000.00'), 100 / 150);
     }
 
     public function testMultiplyByRatioPreservesExactProRataConversion(): void

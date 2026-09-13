@@ -56,8 +56,12 @@ final class Money
         return new self($this->units - $other->units);
     }
 
-    public function multiply(int|string $factor): self
+    public function multiply(mixed $factor): self
     {
+        if (!is_int($factor) && !is_string($factor)) {
+            throw new InvalidArgumentException('Factor must be an integer or decimal string.');
+        }
+
         $factorUnits = self::parseToUnits((string) $factor, self::SCALE);
 
         return new self(self::divRoundHalfUp($this->units * $factorUnits, 10 ** self::SCALE));
