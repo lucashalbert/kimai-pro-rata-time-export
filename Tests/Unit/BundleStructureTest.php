@@ -134,10 +134,10 @@ final class BundleStructureTest extends TestCase
         // class from services.yaml makes the plugin invisible to Kimai's plugin
         // administration while otherwise appearing to work.
         $services = Yaml::parseFile($this->root() . '/Resources/config/services.yaml');
-        $definition = $services['services']['KimaiPlugin\\' . self::BUNDLE_NAME . '\\'];
+        $serviceId = 'KimaiPlugin\\' . self::BUNDLE_NAME . '\\' . self::BUNDLE_NAME;
 
         self::assertTrue($services['services']['_defaults']['autoconfigure']);
-        self::assertSame('../../' . self::BUNDLE_NAME . '.php', $definition['resource']);
+        self::assertArrayHasKey($serviceId, $services['services']);
     }
 }
 }

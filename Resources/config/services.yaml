@@ -11,8 +11,7 @@ services:
         autoconfigure: true
         public: false
 
-    KimaiPlugin\ProRataTimeExportBundle\:
-        resource: '../../ProRataTimeExportBundle.php'
+    KimaiPlugin\ProRataTimeExportBundle\ProRataTimeExportBundle: ~
 
     KimaiPlugin\ProRataTimeExportBundle\Configuration\:
         resource: '../../Configuration/'
