@@ -27,6 +27,13 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Service;
 final class DurationScaler
 {
     /**
+     * Decimal places kept for the factor when it enters bcmath arithmetic.
+     * Comfortably exceeds a PHP float's ~15-17 significant digits, so no
+     * precision the caller could have supplied is discarded.
+     */
+    private const BC_SCALE = 20;
+
+    /**
      * The conversion factor: effective rate divided by employer base rate.
      *
      * Spec §35 requires factors greater than 1 to work (a record rated above
@@ -36,8 +43,11 @@ final class DurationScaler
      */
     public function calculateFactor(float $effectiveHourlyRate, float $baseRate): float
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        if ($baseRate <= 0.0) {
+            throw new \InvalidArgumentException('Base rate must be greater than zero.');
+        }
+
+        return $effectiveHourlyRate / $baseRate;
     }
 
     /**
@@ -47,12 +57,24 @@ final class DurationScaler
      * actual duration yields zero equivalent minutes and never a negative value
      * (spec §14).
      *
+     * Rounding is done entirely in bcmath's arbitrary-precision decimal domain
+     * (spec §27/§28) rather than via native float comparison, so a
+     * mathematically exact half-minute can never be misclassified by binary
+     * floating-point drift (e.g. a true 29.5 represented as 29.499999999999996).
+     *
      * @param int $actualSeconds recorded duration from ExportableItem::getDuration()
      */
     public function scaleToMinutes(int $actualSeconds, float $factor): int
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        $exactMinutes = bcdiv(
+            bcmul((string) $actualSeconds, sprintf('%.' . self::BC_SCALE . 'F', $factor), self::BC_SCALE),
+            '60',
+            self::BC_SCALE
+        );
+
+        // bcadd truncates rather than rounds when reducing scale, so adding
+        // 0.5 before truncating to scale 0 implements round-half-up.
+        return (int) bcadd(bcadd($exactMinutes, '0.5', self::BC_SCALE), '0', 0);
     }
 
     /**
@@ -61,7 +83,6 @@ final class DurationScaler
      */
     public function scaleToExactMinutes(int $actualSeconds, float $factor): float
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        return ($actualSeconds / 60.0) * $factor;
     }
 }
