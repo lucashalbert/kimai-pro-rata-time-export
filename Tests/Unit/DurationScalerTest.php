@@ -96,7 +96,7 @@ final class DurationScalerTest extends TestCase
         yield 'zero duration stays zero' => [0, 0.8, 0];
 
         // Spec §36: very large duration, no overflow/precision loss.
-        // 10,000,000 minutes x 1.0 must round-trip exactly via bcmath.
+        // 10,000,000 minutes x 1.0 must round-trip exactly.
         yield 'very large duration' => [10_000_000 * 60, 1.0, 10_000_000];
     }
 
@@ -106,6 +106,20 @@ final class DurationScalerTest extends TestCase
     public function testScaleToMinutesRoundingExamples(int $actualSeconds, float $factor, int $expectedMinutes): void
     {
         self::assertSame($expectedMinutes, $this->scaler->scaleToMinutes($actualSeconds, $factor));
+    }
+
+    public function testCalculatedFactorDoesNotLoseExactHalfMinuteToFloatNoise(): void
+    {
+        $factor = $this->scaler->calculateFactor(88.5, 150.0);
+
+        self::assertSame(30, $this->scaler->scaleToMinutes(50 * 60, $factor));
+    }
+
+    public function testScaleToMinutesRejectsNegativeInputs(): void
+    {
+        $this->expectException(\InvalidArgumentException::class);
+
+        $this->scaler->scaleToMinutes(-1, 0.8);
     }
 
     public function testScaleToExactMinutesReturnsUnroundedValue(): void
