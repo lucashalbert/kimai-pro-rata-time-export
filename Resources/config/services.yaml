@@ -12,7 +12,13 @@ services:
         public: false
 
     KimaiPlugin\ProRataTimeExportBundle\:
-        resource: '../../*'
-        exclude:
-            - '../../Resources/'
-            - '../../Tests/'
+        resource: '../../ProRataTimeExportBundle.php'
+
+    KimaiPlugin\ProRataTimeExportBundle\Configuration\:
+        resource: '../../Configuration/'
+
+    KimaiPlugin\ProRataTimeExportBundle\DependencyInjection\:
+        resource: '../../DependencyInjection/'
+
+    KimaiPlugin\ProRataTimeExportBundle\Service\:
+        resource: '../../Service/'
