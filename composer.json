@@ -1,0 +1,35 @@
+{
+    "name": "lucashalbert/kimai-pro-rata-time-export",
+    "description": "Kimai plugin that derives a compensation-equivalent timecard from recorded timesheets, without modifying them.",
+    "homepage": "https://github.com/lucashalbert/kimai-pro-rata-time-export",
+    "type": "kimai-plugin",
+    "keywords": [
+        "kimai",
+        "kimai-plugin"
+    ],
+    "license": "MIT",
+    "require": {
+        "php": ">=8.2"
+    },
+    "extra": {
+        "kimai": {
+            "require": 24000,
+            "version": "0.1.0",
+            "name": "Pro Rata Time Export"
+        }
+    },
+    "autoload": {
+        "psr-4": {
+            "KimaiPlugin\\ProRataTimeExportBundle\\": ""
+        }
+    },
+    "config": {
+        "platform": {
+            "php": "8.2"
+        },
+        "preferred-install": {
+            "*": "dist"
+        },
+        "sort-packages": true
+    }
+}
