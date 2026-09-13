@@ -18,8 +18,8 @@ use PHPUnit\Framework\TestCase;
  * Spec §37, §16: interval generation. Spec §38: DST transitions.
  *
  * DST fixtures use real 2026 transition dates for America/New_York
- * (spring forward 2026-03-08, fall back 2026-11-01) with explicit UTC
- * offsets in the input, so the pre-transition instant is unambiguous.
+ * (spring forward 2026-03-08, fall back 2026-11-01). They use offset-free
+ * strings plus a named DateTimeZone so PHP applies the zone's DST rules.
  */
 final class IntervalGeneratorTest extends TestCase
 {
