@@ -115,6 +115,13 @@ final class DurationScalerTest extends TestCase
         self::assertSame(30, $this->scaler->scaleToMinutes(50 * 60, $factor));
     }
 
+    public function testCalculatedFactorIsNotQuantizedBeforeFinalRounding(): void
+    {
+        $factor = $this->scaler->calculateFactor(425.36, 220.48);
+
+        self::assertSame(1432, $this->scaler->scaleToMinutes(742 * 60, $factor));
+    }
+
     public function testScaleToMinutesRejectsNegativeInputs(): void
     {
         $this->expectException(\InvalidArgumentException::class);

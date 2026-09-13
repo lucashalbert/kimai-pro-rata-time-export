@@ -26,9 +26,9 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Service;
  */
 final class DurationScaler
 {
-    private const FACTOR_SCALE = 100_000_000;
+    private const BC_SCALE = 20;
 
-    private const SECONDS_PER_MINUTE = 60;
+    private const SECONDS_PER_MINUTE = '60';
 
     /**
      * The conversion factor: effective rate divided by employer base rate.
@@ -70,15 +70,13 @@ final class DurationScaler
             throw new \InvalidArgumentException('Conversion factor must not be negative.');
         }
 
-        $scaledFactor = (int) round($factor * self::FACTOR_SCALE, 0, PHP_ROUND_HALF_UP);
-        $denominator = self::SECONDS_PER_MINUTE * self::FACTOR_SCALE;
-        $halfDenominator = intdiv($denominator, 2);
+        $exactMinutes = \bcdiv(
+            \bcmul((string) $actualSeconds, $this->factorToDecimal($factor), self::BC_SCALE),
+            self::SECONDS_PER_MINUTE,
+            self::BC_SCALE
+        );
 
-        if ($scaledFactor !== 0 && $actualSeconds > intdiv(PHP_INT_MAX - $halfDenominator, $scaledFactor)) {
-            throw new \OverflowException('Scaled duration is too large to round safely.');
-        }
-
-        return intdiv(($actualSeconds * $scaledFactor) + $halfDenominator, $denominator);
+        return (int) \bcadd(\bcadd($exactMinutes, '0.5', self::BC_SCALE), '0', 0);
     }
 
     /**
@@ -88,5 +86,16 @@ final class DurationScaler
     public function scaleToExactMinutes(int $actualSeconds, float $factor): float
     {
         return ($actualSeconds / 60.0) * $factor;
+    }
+
+    private function factorToDecimal(float $factor): string
+    {
+        $decimal = \var_export($factor, true);
+
+        if (!str_contains($decimal, 'E') && !str_contains($decimal, 'e')) {
+            return $decimal;
+        }
+
+        return sprintf('%.20F', $factor);
     }
 }
