@@ -23,7 +23,7 @@ use InvalidArgumentException;
  * bcmath/GMP are unavailable in this plugin's target Kimai runtime images, so
  * this avoids that dependency entirely.
  *
- * ponytail: 64-bit ints cap a single value's multiply() around low
+ * Caveat: 64-bit ints cap a single value's multiply() around low
  * trillions before overflowing; move to bcmath/GMP if amounts ever approach that.
  */
 final class Money
