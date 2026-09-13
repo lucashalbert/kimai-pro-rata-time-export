@@ -137,7 +137,7 @@ final class BundleStructureTest extends TestCase
         $definition = $services['services']['KimaiPlugin\\' . self::BUNDLE_NAME . '\\'];
 
         self::assertTrue($services['services']['_defaults']['autoconfigure']);
-        self::assertNotContains('../../' . self::BUNDLE_NAME . '.php', $definition['exclude']);
+        self::assertSame('../../' . self::BUNDLE_NAME . '.php', $definition['resource']);
     }
 }
 }
