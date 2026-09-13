@@ -76,6 +76,13 @@ final class MoneyTest extends TestCase
         self::assertTrue($result->equals(Money::fromDecimalString('100000.00')));
     }
 
+    public function testMultiplyDoesNotRoundBeforeDisplay(): void
+    {
+        $result = Money::fromDecimalString('0.01')->multiply('0.49995');
+
+        self::assertSame('0.00', $result->format());
+    }
+
     public function testRepeatedAdditionDoesNotDriftLikeNaiveFloatArithmetic(): void
     {
         // Under naive float arithmetic, summing 0.1 thirty times yields
