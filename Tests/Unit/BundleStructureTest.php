@@ -9,8 +9,37 @@
 
 declare(strict_types=1);
 
-namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit;
+namespace App\Plugin {
+    if (!interface_exists(PluginInterface::class)) {
+        interface PluginInterface
+        {
+        }
+    }
+}
 
+namespace Symfony\Component\HttpKernel\Bundle {
+    if (!class_exists(Bundle::class)) {
+        abstract class Bundle
+        {
+            public function getName(): string
+            {
+                return (new \ReflectionClass($this))->getShortName();
+            }
+
+            public function getPath(): string
+            {
+                $fileName = (new \ReflectionObject($this))->getFileName();
+
+                return \dirname((string) $fileName);
+            }
+        }
+    }
+}
+
+namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit {
+
+use App\Plugin\PluginInterface;
+use KimaiPlugin\ProRataTimeExportBundle\ProRataTimeExportBundle;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\Yaml\Yaml;
 
@@ -41,12 +70,40 @@ final class BundleStructureTest extends TestCase
         return \dirname(__DIR__, 2);
     }
 
-    public function testBundleClassFileSitsBesideComposerJson(): void
+    public function testBundleClassResolvesToKimaiPluginMetadataPath(): void
     {
-        // Plugin::getMetadata() reads composer.json from Bundle::getPath(), the
-        // directory holding the bundle class. They must be siblings.
-        self::assertFileExists($this->root() . '/' . self::BUNDLE_NAME . '.php');
-        self::assertFileExists($this->root() . '/composer.json');
+        $class = 'KimaiPlugin\\' . self::BUNDLE_NAME . '\\' . self::BUNDLE_NAME;
+        $psr4 = $this->manifest()['autoload']['psr-4'];
+        $autoloadPrefix = 'KimaiPlugin\\' . self::BUNDLE_NAME . '\\';
+        $autoloadRoot = rtrim($this->root() . '/' . $psr4[$autoloadPrefix], '/');
+
+        $loader = static function (string $autoloadedClass) use ($autoloadPrefix, $autoloadRoot): void {
+            if (!str_starts_with($autoloadedClass, $autoloadPrefix)) {
+                return;
+            }
+
+            $relativeClass = substr($autoloadedClass, \strlen($autoloadPrefix));
+            $path = $autoloadRoot . '/' . str_replace('\\', '/', $relativeClass) . '.php';
+
+            if (is_file($path)) {
+                require_once $path;
+            }
+        };
+
+        spl_autoload_register($loader);
+
+        try {
+            self::assertTrue(class_exists($class));
+        } finally {
+            spl_autoload_unregister($loader);
+        }
+
+        $bundle = new ProRataTimeExportBundle();
+
+        self::assertInstanceOf(PluginInterface::class, $bundle);
+        self::assertSame(self::BUNDLE_NAME, $bundle->getName());
+        self::assertSame($this->root(), $bundle->getPath());
+        self::assertFileExists($bundle->getPath() . '/composer.json');
     }
 
     public function testManifestDeclaresKimaiPluginMetadata(): void
@@ -82,4 +139,5 @@ final class BundleStructureTest extends TestCase
         self::assertTrue($services['services']['_defaults']['autoconfigure']);
         self::assertNotContains('../../' . self::BUNDLE_NAME . '.php', $definition['exclude']);
     }
+}
 }

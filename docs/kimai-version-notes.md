@@ -194,7 +194,7 @@ way and this repository follows it.
   "extra": {
     "kimai": {
       "require": 24000,                  // REQUIRED, must be an int (Constants::VERSION_ID)
-      "name": "Compensation Equivalent", // REQUIRED, display name in plugin admin
+      "name": "Pro Rata Time Export",    // REQUIRED, display name in plugin admin
       "version": "0.1.0"                 // optional; falls back to root "version", else "unknown"
     }
   },
