@@ -9,7 +9,6 @@
     ],
     "license": "MIT",
     "require": {
-        "ext-bcmath": "*",
         "php": ">=8.2"
     },
     "extra": {

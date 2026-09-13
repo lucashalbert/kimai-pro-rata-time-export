@@ -26,9 +26,7 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Service;
  */
 final class DurationScaler
 {
-    private const BC_SCALE = 20;
-
-    private const SECONDS_PER_MINUTE = '60';
+    private const SECONDS_PER_MINUTE = 60;
 
     /**
      * The conversion factor: effective rate divided by employer base rate.
@@ -74,8 +72,9 @@ final class DurationScaler
             return 0;
         }
 
-        $exactMinutes = $this->scaleToExactMinutesDecimal($actualSeconds, $effectiveHourlyRate, $baseRate);
-        return (int) \bcadd(\bcadd($exactMinutes, '0.5', self::BC_SCALE), '0', 0);
+        [$numerator, $denominator] = $this->scaleToExactMinutesRatio($actualSeconds, $effectiveHourlyRate, $baseRate);
+
+        return self::divRoundHalfUp($numerator, $denominator);
     }
 
     /**
@@ -95,34 +94,50 @@ final class DurationScaler
             throw new \InvalidArgumentException('Effective hourly rate must not be negative.');
         }
 
-        return (float) $this->scaleToExactMinutesDecimal($actualSeconds, $effectiveHourlyRate, $baseRate);
+        [$numerator, $denominator] = $this->scaleToExactMinutesRatio($actualSeconds, $effectiveHourlyRate, $baseRate);
+
+        return $numerator / $denominator;
     }
 
-    private function scaleToExactMinutesDecimal(
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private function scaleToExactMinutesRatio(
         int $actualSeconds,
         float $effectiveHourlyRate,
         float $baseRate
-    ): string {
+    ): array {
         $this->assertValidBaseRate($baseRate);
+        $this->assertFiniteRate($effectiveHourlyRate, 'Effective hourly rate');
+        $this->assertFiniteRate($baseRate, 'Base rate');
 
-        $numerator = \bcmul(
-            (string) $actualSeconds,
-            $this->floatToDecimal($effectiveHourlyRate),
-            self::BC_SCALE
-        );
-        $denominator = \bcmul(
-            $this->floatToDecimal($baseRate),
-            self::SECONDS_PER_MINUTE,
-            self::BC_SCALE
-        );
+        [$effectiveNumerator, $effectiveDenominator] = self::parseDecimalRatio($this->floatToDecimal($effectiveHourlyRate));
+        [$baseNumerator, $baseDenominator] = self::parseDecimalRatio($this->floatToDecimal($baseRate));
 
-        return \bcdiv($numerator, $denominator, self::BC_SCALE);
+        $numeratorParts = [$actualSeconds, $effectiveNumerator, $baseDenominator];
+        $denominatorParts = [self::SECONDS_PER_MINUTE, $effectiveDenominator, $baseNumerator];
+
+        self::reduceParts($numeratorParts, $denominatorParts);
+
+        return [
+            array_product($numeratorParts),
+            array_product($denominatorParts),
+        ];
     }
 
     private function assertValidBaseRate(float $baseRate): void
     {
         if ($baseRate <= 0.0) {
             throw new \InvalidArgumentException('Base rate must be greater than zero.');
+        }
+
+        $this->assertFiniteRate($baseRate, 'Base rate');
+    }
+
+    private function assertFiniteRate(float $value, string $label): void
+    {
+        if (is_nan($value) || is_infinite($value)) {
+            throw new \InvalidArgumentException($label . ' must be finite.');
         }
     }
 
@@ -135,5 +150,77 @@ final class DurationScaler
         }
 
         return sprintf('%.20F', $value);
+    }
+
+    /**
+     * @return array{0: int, 1: int}
+     */
+    private static function parseDecimalRatio(string $amount): array
+    {
+        $pattern = '/^(-?)(\d+)(?:\.(\d+))?$/';
+
+        if (!preg_match($pattern, trim($amount), $matches)) {
+            throw new \InvalidArgumentException(sprintf('"%s" is not a valid decimal amount.', $amount));
+        }
+
+        $fraction = rtrim($matches[3] ?? '', '0');
+        $denominator = 10 ** strlen($fraction);
+        $numerator = ((int) $matches[2]) * $denominator + ($fraction === '' ? 0 : (int) $fraction);
+
+        if ($matches[1] === '-') {
+            $numerator = -$numerator;
+        }
+
+        $gcd = self::gcd(abs($numerator), $denominator);
+
+        return [intdiv($numerator, $gcd), intdiv($denominator, $gcd)];
+    }
+
+    /**
+     * @param int[] $numeratorParts
+     * @param int[] $denominatorParts
+     */
+    private static function reduceParts(array &$numeratorParts, array &$denominatorParts): void
+    {
+        foreach ($numeratorParts as $numeratorIndex => $numeratorPart) {
+            foreach ($denominatorParts as $denominatorIndex => $denominatorPart) {
+                $gcd = self::gcd(abs($numeratorPart), abs($denominatorPart));
+
+                if ($gcd <= 1) {
+                    continue;
+                }
+
+                $numeratorPart = intdiv($numeratorPart, $gcd);
+                $denominatorPart = intdiv($denominatorPart, $gcd);
+                $denominatorParts[$denominatorIndex] = $denominatorPart;
+
+                if ($numeratorPart === 1) {
+                    break;
+                }
+            }
+
+            $numeratorParts[$numeratorIndex] = $numeratorPart;
+        }
+    }
+
+    private static function divRoundHalfUp(int $numerator, int $denominator): int
+    {
+        $quotient = intdiv($numerator, $denominator);
+        $remainder = $numerator % $denominator;
+
+        if ($remainder * 2 >= $denominator) {
+            ++$quotient;
+        }
+
+        return $quotient;
+    }
+
+    private static function gcd(int $a, int $b): int
+    {
+        while ($b !== 0) {
+            [$a, $b] = [$b, $a % $b];
+        }
+
+        return $a === 0 ? 1 : $a;
     }
 }
