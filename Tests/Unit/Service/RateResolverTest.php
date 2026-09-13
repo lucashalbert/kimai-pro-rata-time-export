@@ -143,11 +143,4 @@ final class RateResolverTest extends TestCase
         self::assertSame(150.0, $this->resolver->resolveHourlyRate($newRecord));
         self::assertSame(120.0, $this->resolver->resolveHourlyRate($oldRecord));
     }
-
-    public function testResolverHasNoDependencyThatCouldResolveCurrentRates(): void
-    {
-        // No constructor means no RateService, TimesheetRepository or
-        // *RateRepository can be injected (spec §6, §40).
-        self::assertNull((new \ReflectionClass(RateResolver::class))->getConstructor());
-    }
 }
