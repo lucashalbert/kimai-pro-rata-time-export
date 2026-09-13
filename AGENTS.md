@@ -32,6 +32,23 @@ registration, export extension points), and why each was chosen:
 - "Pro Rata Time Export" is the plugin/product name. "Actual" vs "Compensation Equivalent"
   is the deliberate user-facing vocabulary for the calculated time (spec §3.4, §52) and is
   a separate decision — do not rename one while chasing the other.
+- PHP's `DateTimeImmutable`/`DateTime` constructor silently ignores the `DateTimeZone`
+  argument whenever the parsed string already carries a UTC offset (e.g.
+  `'2026-03-08T01:30:00-05:00'`) — it builds a fixed-offset zone instead, so DST rules
+  never apply and later arithmetic on that instant is wrong across a transition. Any test
+  or code building a tz-aware instant for a named zone (`America/New_York`, etc.) must
+  construct from an offset-free string (`'2026-03-08 01:30:00'`) plus the `DateTimeZone`.
+  See `Service/IntervalGenerator.php` and its test for the working pattern.
+- `composer.json` has no `require-dev` yet (no PHPUnit/PHPStan/CS fixer wired up), and CI
+  (`.github/workflows/ci.yml`) only runs `composer validate`. Until a shared dev-dependency
+  set lands, run PHPUnit against a given test file via a disposable container: `composer
+  require-dev`-only scratch project (outside the repo) installed with `docker run --rm -v
+  <scratch>:/app -w /app composer:2 install`, plus a bootstrap script that
+  `spl_autoload_register`s the `KimaiPlugin\ProRataTimeExportBundle\` prefix onto the repo
+  root, run under `docker run ... php:8.2-cli php vendor/bin/phpunit --bootstrap
+  bootstrap.php <path-to-test>`. Don't add `require-dev` to the plugin's own
+  `composer.json` for a single service's tests — that's shared-file churn several workers
+  would collide on; it belongs in the task that wires up CI test execution for real.
 
 ## Commands
 

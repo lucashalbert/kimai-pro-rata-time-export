@@ -37,7 +37,28 @@ final class IntervalGenerator
      */
     public function generateEnd(\DateTimeInterface $actualBegin, int $equivalentMinutes): \DateTimeImmutable
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        return $this->preserveStartShortenTowardEnd($actualBegin, $equivalentMinutes);
+    }
+
+    /**
+     * The v1 policy (spec §11): preserve the actual start, shorten toward the end.
+     *
+     * A future policy (preserve_end, center, distributed - spec §64) would live
+     * as another private method selected here. generateEnd() is the only method
+     * CompensationCalculator calls, so substituting the policy never touches the
+     * compensation calculation.
+     *
+     * Adds whole minutes to the source Unix timestamp rather than to a formatted
+     * wall-clock string, then re-attaches the original timezone: this is what
+     * makes the result correct across midnight (spec §16) and DST transitions
+     * (spec §17) - the addition is real elapsed time, and the timezone resolves
+     * the resulting instant back to the correct local date/time and offset on
+     * either side of a transition.
+     */
+    private function preserveStartShortenTowardEnd(\DateTimeInterface $actualBegin, int $equivalentMinutes): \DateTimeImmutable
+    {
+        $begin = \DateTimeImmutable::createFromInterface($actualBegin);
+
+        return $begin->setTimestamp($begin->getTimestamp() + ($equivalentMinutes * 60));
     }
 }
