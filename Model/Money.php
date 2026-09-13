@@ -58,9 +58,18 @@ final class Money
 
     public function multiply(int|float|string $factor): self
     {
-        $factorUnits = self::parseToUnits((string) $factor, self::SCALE);
+        $factorUnits = self::parseToUnits(self::factorToDecimalString($factor), self::SCALE);
 
         return new self(self::divRoundHalfUp($this->units * $factorUnits, 10 ** self::SCALE));
+    }
+
+    public function multiplyByRatio(int $numerator, int $denominator): self
+    {
+        if ($denominator <= 0) {
+            throw new InvalidArgumentException('Ratio denominator must be greater than zero.');
+        }
+
+        return new self(self::divRoundHalfUp($this->units * $numerator, $denominator));
     }
 
     public function equals(self $other): bool
@@ -97,6 +106,19 @@ final class Money
         $units = ((int) $matches[2]) * (10 ** $scale) + (int) $fraction;
 
         return $matches[1] === '-' ? -$units : $units;
+    }
+
+    private static function factorToDecimalString(int|float|string $factor): string
+    {
+        if (!is_float($factor)) {
+            return (string) $factor;
+        }
+
+        if (!is_finite($factor)) {
+            throw new InvalidArgumentException('Factor must be finite.');
+        }
+
+        return number_format($factor, self::SCALE, '.', '');
     }
 
     private static function divRoundHalfUp(int $numerator, int $denominator): int

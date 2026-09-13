@@ -52,6 +52,21 @@ final class MoneyTest extends TestCase
         self::assertFalse($result->equals(Money::fromDecimalString('95.99')));
     }
 
+    public function testMultiplyAcceptsRepeatingFloatRatio(): void
+    {
+        $result = Money::fromDecimalString('150.00')->multiply(100 / 150);
+
+        self::assertSame('100.00', $result->format());
+    }
+
+    public function testMultiplyByRatioPreservesExactProRataConversion(): void
+    {
+        $result = Money::fromDecimalString('150.00')->multiplyByRatio(100, 150);
+
+        self::assertSame('100.00', $result->format());
+        self::assertTrue($result->equals(Money::fromDecimalString('100.00')));
+    }
+
     public function testRepeatedAdditionDoesNotDriftLikeNaiveFloatArithmetic(): void
     {
         // Under naive float arithmetic, summing 0.1 thirty times yields
