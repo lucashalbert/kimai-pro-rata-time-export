@@ -50,32 +50,31 @@ final class DurationScaler
     /**
      * Equivalent duration in whole minutes for an actual duration in seconds.
      *
-     * Applies the factor at full precision and rounds exactly once. A zero
+     * Applies the rate ratio at full precision and rounds exactly once. A zero
      * actual duration yields zero equivalent minutes and never a negative value
      * (spec §14).
      *
      * @param int $actualSeconds recorded duration from ExportableItem::getDuration()
      */
-    public function scaleToMinutes(int $actualSeconds, float $factor): int
-    {
-        if ($actualSeconds === 0) {
-            return 0;
-        }
-
+    public function scaleToMinutes(
+        int $actualSeconds,
+        float $effectiveHourlyRate,
+        float $baseRate
+    ): int {
         if ($actualSeconds < 0) {
             throw new \InvalidArgumentException('Actual duration must not be negative.');
         }
 
-        if ($factor < 0.0) {
-            throw new \InvalidArgumentException('Conversion factor must not be negative.');
+        if ($effectiveHourlyRate < 0.0) {
+            throw new \InvalidArgumentException('Effective hourly rate must not be negative.');
         }
 
-        $exactMinutes = \bcdiv(
-            \bcmul((string) $actualSeconds, $this->factorToDecimal($factor), self::BC_SCALE),
-            self::SECONDS_PER_MINUTE,
-            self::BC_SCALE
-        );
+        if ($actualSeconds === 0) {
+            $this->assertValidBaseRate($baseRate);
+            return 0;
+        }
 
+        $exactMinutes = $this->scaleToExactMinutesDecimal($actualSeconds, $effectiveHourlyRate, $baseRate);
         return (int) \bcadd(\bcadd($exactMinutes, '0.5', self::BC_SCALE), '0', 0);
     }
 
@@ -83,19 +82,58 @@ final class DurationScaler
      * The unrounded equivalent duration in minutes, retained so the export can
      * disclose the rounding difference rather than hide it (spec §21, §47).
      */
-    public function scaleToExactMinutes(int $actualSeconds, float $factor): float
-    {
-        return ($actualSeconds / 60.0) * $factor;
+    public function scaleToExactMinutes(
+        int $actualSeconds,
+        float $effectiveHourlyRate,
+        float $baseRate
+    ): float {
+        if ($actualSeconds < 0) {
+            throw new \InvalidArgumentException('Actual duration must not be negative.');
+        }
+
+        if ($effectiveHourlyRate < 0.0) {
+            throw new \InvalidArgumentException('Effective hourly rate must not be negative.');
+        }
+
+        return (float) $this->scaleToExactMinutesDecimal($actualSeconds, $effectiveHourlyRate, $baseRate);
     }
 
-    private function factorToDecimal(float $factor): string
+    private function scaleToExactMinutesDecimal(
+        int $actualSeconds,
+        float $effectiveHourlyRate,
+        float $baseRate
+    ): string {
+        $this->assertValidBaseRate($baseRate);
+
+        $numerator = \bcmul(
+            (string) $actualSeconds,
+            $this->floatToDecimal($effectiveHourlyRate),
+            self::BC_SCALE
+        );
+        $denominator = \bcmul(
+            $this->floatToDecimal($baseRate),
+            self::SECONDS_PER_MINUTE,
+            self::BC_SCALE
+        );
+
+        return \bcdiv($numerator, $denominator, self::BC_SCALE);
+    }
+
+    private function assertValidBaseRate(float $baseRate): void
     {
-        $decimal = \var_export($factor, true);
+        if ($baseRate <= 0.0) {
+            throw new \InvalidArgumentException('Base rate must be greater than zero.');
+        }
+    }
+
+    private function floatToDecimal(float $value): string
+    {
+        $decimal = \var_export($value, true);
 
         if (!str_contains($decimal, 'E') && !str_contains($decimal, 'e')) {
             return $decimal;
         }
 
-        return sprintf('%.20F', $factor);
+        return sprintf('%.20F', $value);
     }
 }
