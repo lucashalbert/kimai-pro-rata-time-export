@@ -11,7 +11,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Recorded the Kimai 2.40.0 vs 2.65.0 API investigation in `docs/kimai-version-notes.md`;
   no breaking difference on any extension point the plugin uses.
 - Added the registrable plugin skeleton: bundle class, DI extension, `pro_rata_time_export.base_rate`
-  configuration wiring, and unimplemented stubs for the compensation domain services.
+  configuration wiring, and compensation domain service structure.
 - Added the exact-money value object used for currency calculations and display rounding.
+- Implemented the rate resolver for record-stored hourly rates with fail-closed handling for missing,
+  invalid, and fixed-rate records.
 - Added a Docker Compose development environment (Kimai 2.40.0 by default, `KIMAI_TAG=2.65.0`
   for the newest supported version) and a `composer validate` CI workflow.

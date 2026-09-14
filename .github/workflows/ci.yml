@@ -17,6 +17,6 @@ jobs:
           tools: composer:v2
           coverage: none
 
-      # Minimal for now. Tests, PHPStan and coding standards (spec §57, §58)
-      # land alongside the domain logic they check.
+      # Minimal for now. Unit tests currently need Kimai's autoloader from a
+      # mounted Kimai install; PHPStan and coding standards are not configured yet.
       - run: composer validate --strict --no-check-lock --no-check-publish
