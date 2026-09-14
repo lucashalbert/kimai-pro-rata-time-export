@@ -32,6 +32,17 @@ registration, export extension points), and why each was chosen:
 - "Pro Rata Time Export" is the plugin/product name. "Actual" vs "Compensation Equivalent"
   is the deliberate user-facing vocabulary for the calculated time (spec §3.4, §52) and is
   a separate decision — do not rename one while chasing the other.
+- Kimai's meta-field mechanism (`App\Entity\EntityWithMetaFields`) covers `Project` and
+  `Customer` identically across 2.40.0–2.65.0, but **not** `User` — `User` instead has its
+  own separate native mechanism, `UserPreference`/`getPreferenceValue()`. Both are equally
+  "native, no migration, existing admin UI"; they just live on different admin screens.
+  This is why the spec §7 base-rate hierarchy's project/customer overrides are Kimai meta
+  fields but the user-level override is a Kimai user preference — see
+  `docs/kimai-version-notes.md` §7 for the exact APIs, the non-persisted-`type` gotcha
+  (`getValue()` returns a raw scalar unless a definition-event subscriber also ran in the
+  same request), and the definition-event registration pattern
+  (`ProjectMetaDefinitionEvent`/`CustomerMetaDefinitionEvent`) that a later task still needs
+  to wire up before an admin can actually set these overrides through Kimai's UI.
 - PHP's `DateTimeImmutable`/`DateTime` constructor silently ignores the `DateTimeZone`
   argument whenever the parsed string already carries a UTC offset (e.g.
   `'2026-03-08T01:30:00-05:00'`) — it builds a fixed-offset zone instead, so DST rules
