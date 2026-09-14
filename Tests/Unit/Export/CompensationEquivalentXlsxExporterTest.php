@@ -85,6 +85,17 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
         self::assertContains(['Actual Recorded Time', '0:01:30'], $sheets['Summary']);
     }
 
+    public function testWorkbookShowsEndDateForMidnightCrossingEmployerRows(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 23:00:00', '2026-09-04 01:00:00', 2 * 3600, 150.0, id: 30);
+
+        $response = $exporter->render([$item], self::query());
+        $sheets = self::readWorkbook($response->getFile()->getPathname());
+
+        self::assertSame(['2026-09-03', 'user30', 'Project', '23:00', '2026-09-04 01:00'], $sheets['Employer Timecard'][3]);
+    }
+
     public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
     {
         $exporter = self::grantedExporter();

@@ -97,6 +97,17 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
         self::assertStringContainsString('1.50', $html);
     }
 
+    public function testReviewShowsEndDatesForMidnightCrossingRecords(): void
+    {
+        $renderer = self::grantedRenderer();
+        $item = self::timesheet('2026-09-03 23:00:00', '2026-09-04 01:00:00', 2 * 3600, 150.0, id: 7);
+
+        $html = $renderer->render([$item], self::query())->getContent();
+
+        self::assertStringContainsString('23:00', $html);
+        self::assertGreaterThanOrEqual(2, \substr_count($html, '2026-09-04 01:00'));
+    }
+
     public function testDoesNotMutateSourceTimesheets(): void
     {
         $renderer = self::grantedRenderer();

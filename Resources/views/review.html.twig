@@ -147,14 +147,14 @@
             <td>{{ record.project ? record.project.name : '' }}</td>
             <td>{{ record.activity ? record.activity.name : '' }}</td>
             <td class="actual-col">{{ record.actualStart.format('H:i') }}</td>
-            <td class="actual-col">{{ record.actualEnd.format('H:i') }}</td>
+            <td class="actual-col">{% if record.actualStart.format('Y-m-d') != record.actualEnd.format('Y-m-d') %}{{ record.actualEnd.format('Y-m-d H:i') }}{% else %}{{ record.actualEnd.format('H:i') }}{% endif %}</td>
             <td class="actual-col">{{ (record.actualDurationSeconds // 3600) }}:{{ '%02d'|format((record.actualDurationSeconds % 3600) // 60) }}{% if record.actualDurationSeconds % 60 != 0 %}:{{ '%02d'|format(record.actualDurationSeconds % 60) }}{% endif %}</td>
             <td class="actual-col">{{ '%.2f'|format(record.effectiveHourlyRate) }}</td>
             <td class="actual-col">{{ record.actualValue.format() }}</td>
             <td class="equivalent-col">{{ '%.2f'|format(record.baseRate) }}</td>
             <td class="equivalent-col">{{ '%.6f'|format(record.factor) }}</td>
             <td class="equivalent-col">{{ record.equivalentStart.format('H:i') }}</td>
-            <td class="equivalent-col">{{ record.equivalentEnd.format('H:i') }}</td>
+            <td class="equivalent-col">{% if record.equivalentStart.format('Y-m-d') != record.equivalentEnd.format('Y-m-d') %}{{ record.equivalentEnd.format('Y-m-d H:i') }}{% else %}{{ record.equivalentEnd.format('H:i') }}{% endif %}</td>
             <td class="equivalent-col">{{ (record.equivalentDurationMinutes // 60) }}:{{ '%02d'|format(record.equivalentDurationMinutes % 60) }}</td>
             <td class="equivalent-col">{{ record.equivalentValue.format() }}</td>
             <td>{{ record.roundingDifference.format() }}</td>

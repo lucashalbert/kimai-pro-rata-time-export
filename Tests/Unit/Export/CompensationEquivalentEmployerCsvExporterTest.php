@@ -46,6 +46,16 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
         self::assertCount(3, $rows);
     }
 
+    public function testCsvShowsEndDateForMidnightCrossingEquivalentRows(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 23:00:00', '2026-09-04 01:00:00', 2 * 3600, 150.0, id: 30);
+
+        $rows = self::csvRows($exporter->render([$item], self::query()));
+
+        self::assertSame(['2026-09-03', 'user30', 'Project', '23:00', '2026-09-04 01:00'], $rows[1]);
+    }
+
     public function testMultiUserRecordsPreserveUserIdentityWithoutLeakage(): void
     {
         $exporter = self::grantedExporter();

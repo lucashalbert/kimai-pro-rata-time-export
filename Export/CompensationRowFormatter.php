@@ -38,7 +38,7 @@ trait CompensationRowFormatter
             $record->getUser()?->getDisplayName() ?? '',
             $record->getProject()?->getName() ?? '',
             $record->getEquivalentStart()->format('H:i'),
-            $record->getEquivalentEnd()->format('H:i'),
+            self::formatEndTime($record->getEquivalentStart(), $record->getEquivalentEnd()),
         ];
     }
 
@@ -177,6 +177,15 @@ trait CompensationRowFormatter
         }
 
         return \sprintf('%d:%02d:%02d', $hours, $minutes, $seconds);
+    }
+
+    private static function formatEndTime(\DateTimeInterface $start, \DateTimeInterface $end): string
+    {
+        if ($start->format('Y-m-d') !== $end->format('Y-m-d')) {
+            return $end->format('Y-m-d H:i');
+        }
+
+        return $end->format('H:i');
     }
 
     private static function formatRate(float $rate): string
