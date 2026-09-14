@@ -35,13 +35,7 @@ final class OverrideFieldDefinitionSubscriber implements EventSubscriberInterfac
 
     public function defineProjectOverride(ProjectMetaDefinitionEvent $event): void
     {
-        $project = $event->getEntity();
-
-        if (null !== $project->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME)) {
-            return;
-        }
-
-        $project->setMetaField(
+        $event->getEntity()->setMetaField(
             (new ProjectMeta())
                 ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
                 ->setLabel('Employer Base Rate')
@@ -53,13 +47,7 @@ final class OverrideFieldDefinitionSubscriber implements EventSubscriberInterfac
 
     public function defineCustomerOverride(CustomerMetaDefinitionEvent $event): void
     {
-        $customer = $event->getEntity();
-
-        if (null !== $customer->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME)) {
-            return;
-        }
-
-        $customer->setMetaField(
+        $event->getEntity()->setMetaField(
             (new CustomerMeta())
                 ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
                 ->setLabel('Employer Base Rate')

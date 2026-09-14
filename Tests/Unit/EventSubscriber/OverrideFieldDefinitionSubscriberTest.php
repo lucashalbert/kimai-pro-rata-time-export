@@ -48,18 +48,22 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
         self::assertHasPositiveConstraint($field->getConstraints());
     }
 
-    public function testProjectOverrideFieldIsNotDuplicatedOrOverwritten(): void
+    public function testProjectOverrideFieldIsNotDuplicatedAndKeepsExistingValue(): void
     {
         $project = (new Project())->setName('Project A');
         $existing = (new ProjectMeta())
             ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
-            ->setLabel('Existing Label');
+            ->setValue('155.25');
         $project->setMetaField($existing);
 
         $this->subscriber->defineProjectOverride(new ProjectMetaDefinitionEvent($project));
 
-        self::assertSame($existing, $project->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME));
-        self::assertSame('Existing Label', $existing->getLabel());
+        $field = $project->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
+        self::assertSame($existing, $field);
+        self::assertSame(155.25, $field->getValue());
+        self::assertSame(NumberType::class, $field->getType());
+        self::assertSame(['required' => false], $field->getOptions());
+        self::assertHasPositiveConstraint($field->getConstraints());
         self::assertCount(1, $project->getMetaFields());
     }
 
@@ -76,18 +80,22 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
         self::assertHasPositiveConstraint($field->getConstraints());
     }
 
-    public function testCustomerOverrideFieldIsNotDuplicatedOrOverwritten(): void
+    public function testCustomerOverrideFieldIsNotDuplicatedAndKeepsExistingValue(): void
     {
         $customer = new Customer('Customer A');
         $existing = (new CustomerMeta())
             ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
-            ->setLabel('Existing Label');
+            ->setValue('145.75');
         $customer->setMetaField($existing);
 
         $this->subscriber->defineCustomerOverride(new CustomerMetaDefinitionEvent($customer));
 
-        self::assertSame($existing, $customer->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME));
-        self::assertSame('Existing Label', $existing->getLabel());
+        $field = $customer->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
+        self::assertSame($existing, $field);
+        self::assertSame(145.75, $field->getValue());
+        self::assertSame(NumberType::class, $field->getType());
+        self::assertSame(['required' => false], $field->getOptions());
+        self::assertHasPositiveConstraint($field->getConstraints());
         self::assertCount(1, $customer->getMetaFields());
     }
 
