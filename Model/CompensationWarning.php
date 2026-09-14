@@ -14,9 +14,10 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Model;
 use App\Entity\ExportableItem;
 
 /**
- * A disclosed problem with one source record, attached to the derived
- * CompensationEquivalentRecord(s) it concerns so it survives to the review UI
- * and summary rather than being logged and dropped (spec §32, §33).
+ * A disclosed problem with one source record, carried either on the derived
+ * CompensationEquivalentRecord it concerns or at batch level when no derived
+ * record exists, so it survives to the review UI and summary rather than being
+ * logged and dropped (spec §32, §33).
  *
  * Immutable; identified by reason + affected source record id + a
  * human-readable message, mirroring UnusableEffectiveRateException's
@@ -77,8 +78,8 @@ final class CompensationWarning
     }
 
     /**
-     * Value equality, used to de-duplicate the same warning after it has been
-     * fanned out onto multiple derived records (see CompensationCalculator).
+     * Value equality, used to de-duplicate the same warning when record-level
+     * and batch-level warnings are collected into one summary.
      */
     public function equals(self $other): bool
     {

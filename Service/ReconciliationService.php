@@ -22,16 +22,15 @@ use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
  * Proves the derived timecard reconciles against the source records
  * (spec §21, §62).
  *
- * Compares sum(actual duration x effective rate) against
- * sum(equivalent minutes) x base rate and reports the difference. The rounding
- * variance MUST always be surfaced, never suppressed or absorbed (spec §21).
+ * Compares summed actual compensation against summed equivalent compensation
+ * and reports the difference. The rounding variance MUST always be surfaced,
+ * never suppressed or absorbed (spec §21).
  */
 final class ReconciliationService
 {
     /**
      * Aggregate derived records into the summary shown before export
-     * (spec §20, §48), including per-user totals and the rounding variance in
-     * both currency and minutes.
+     * (spec §20, §48), including per-user totals and the rounding variance.
      *
      * When the export/query layer supplies the selected reporting period, that
      * period is authoritative; otherwise this falls back to the records' actual
