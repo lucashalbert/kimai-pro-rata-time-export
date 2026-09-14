@@ -12,7 +12,7 @@ All calculations are read-only transformations. Source Kimai data remains unchan
 
 ## Compatibility
 
-Targets **Kimai 2.40.0 through 2.65.0** on PHP 8.2+ with the PHP BCMath extension.
+Targets **Kimai 2.40.0 through 2.65.0** on PHP 8.2+.
 
 Every extension point the plugin uses — the `Timesheet` entity, the plugin/bundle registration mechanism, and the export renderer interfaces — is identical across that range, so there is no version-detection code. `composer.json` declares `extra.kimai.require: 24000` (Kimai's minimum-version metadata); Kimai does not enforce an upper bound.
 
