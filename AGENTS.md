@@ -43,6 +43,11 @@ registration, export extension points), and why each was chosen:
   same request), and the definition-event registration pattern
   (`ProjectMetaDefinitionEvent`/`CustomerMetaDefinitionEvent`) used to make
   those overrides editable through Kimai's UI.
+- Most Kimai entity setters are fluent (`Timesheet::setUser()`/`setProject()`/`setActivity()`/`setBegin()`
+  etc. return the entity), but `User::setUserIdentifier(string $identifier): void` is not — it returns
+  `void`. `(new User())->setUserIdentifier('alice')` silently evaluates to `null`, not the user, with no
+  error until something calls a method on the resulting `null`. Construct then call separately:
+  `$user = new User(); $user->setUserIdentifier('alice');`.
 - PHP's `DateTimeImmutable`/`DateTime` constructor silently ignores the `DateTimeZone`
   argument whenever the parsed string already carries a UTC offset (e.g.
   `'2026-03-08T01:30:00-05:00'`) — it builds a fixed-offset zone instead, so DST rules
