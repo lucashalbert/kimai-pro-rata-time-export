@@ -15,5 +15,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the exact-money value object used for currency calculations and display rounding.
 - Implemented the rate resolver for record-stored hourly rates with fail-closed handling for missing,
   invalid, and fixed-rate records.
+- Implemented `DurationScaler` with decimal arithmetic and unit coverage for minute rounding.
 - Added a Docker Compose development environment (Kimai 2.40.0 by default, `KIMAI_TAG=2.65.0`
   for the newest supported version) and a `composer validate` CI workflow.
