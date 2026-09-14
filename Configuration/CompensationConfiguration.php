@@ -55,17 +55,23 @@ final class CompensationConfiguration
      * through to a less specific level, because that would silently produce
      * a wrong number for whoever configured the override (spec §7, §32).
      *
-     * @throws \RuntimeException when no level has a usable value, or when the
-     *                           most specific configured level is not a number greater than zero
+     * @throws \RuntimeException when no level has a usable value, or when any configured level is not a number greater than zero
      */
     public function getBaseRate(ExportableItem $item): float
     {
+        $resolved = null;
+
         foreach ($this->overrides($item) as $level => $value) {
-            if (null === $value || '' === $value) {
+            if (null === $value) {
                 continue;
             }
 
-            return $this->assertPositive($value, $level);
+            $rate = $this->assertPositive($value, $level);
+            $resolved ??= $rate;
+        }
+
+        if (null !== $resolved) {
+            return $resolved;
         }
 
         throw new \RuntimeException(

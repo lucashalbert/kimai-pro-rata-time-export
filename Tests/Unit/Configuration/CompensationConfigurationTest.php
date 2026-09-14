@@ -144,6 +144,20 @@ final class CompensationConfigurationTest extends TestCase
         self::assertSame(180.0, $config->getBaseRate($record));
     }
 
+    public function testInvalidCustomerOverrideThrowsEvenWhenProjectOverrideIsValid(): void
+    {
+        $config = self::configuration(150.0);
+        $customer = self::customerWithOverride(-140.0);
+        $record = self::record(self::projectWithOverride(180.0, $customer), self::userWithOverride(135.0));
+
+        self::assertFalse($config->hasBaseRate($record));
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage(
+            'Unable to generate compensation-equivalent report: The customer employer base rate must be a number greater than zero.'
+        );
+        $config->getBaseRate($record);
+    }
+
     public function testThrowsNotConfiguredWhenNothingIsConfiguredAtAnyLevel(): void
     {
         $config = self::configuration(null);
