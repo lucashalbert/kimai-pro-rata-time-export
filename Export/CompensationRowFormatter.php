@@ -20,11 +20,10 @@ use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarning;
  * exporters (spec §22, §23, §50), so the three output formats can never
  * disagree about how a derived record is rendered.
  *
- * Actual/Equivalent Start and End use a full `Y-m-d H:i` timestamp rather than
- * a bare time, unlike the employer CSV's `H:i`-only columns: the audit trail
- * must stay unambiguous for midnight-crossing records (spec §16), where the
- * Date column alone cannot disambiguate which calendar day an End time falls
- * on.
+ * Audit Actual/Equivalent Start and End use full `Y-m-d H:i` timestamps. The
+ * employer-facing rows keep same-day values as bare `H:i` times, but include
+ * the end date for midnight-crossing intervals so the Date column never implies
+ * the end landed on the start day (spec §16).
  */
 trait CompensationRowFormatter
 {
