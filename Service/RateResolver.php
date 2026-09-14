@@ -35,12 +35,28 @@ final class RateResolver
      * default behaviour is to fail the export with a clear message (spec §32),
      * never to substitute the current project rate.
      *
-     * @throws \RuntimeException when the record carries no usable effective rate
+     * @throws UnusableEffectiveRateException when the record carries no usable effective rate
      */
     public function resolveHourlyRate(ExportableItem $item): float
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        // Kimai stores rate = fixedRate on fixed-rate records but only writes
+        // hourlyRate when non-null, so a stale hourly rate can remain on them.
+        // Fixed-rate records therefore never resolve through getHourlyRate().
+        if (null !== $item->getFixedRate()) {
+            throw UnusableEffectiveRateException::fixedRate($item);
+        }
+
+        $hourlyRate = $item->getHourlyRate();
+
+        if (null === $hourlyRate || 0.0 === $hourlyRate) {
+            throw UnusableEffectiveRateException::missing($item);
+        }
+
+        if ($hourlyRate < 0.0 || !is_finite($hourlyRate)) {
+            throw UnusableEffectiveRateException::invalid($item);
+        }
+
+        return $hourlyRate;
     }
 
     /**
@@ -49,7 +65,12 @@ final class RateResolver
      */
     public function hasHourlyRate(ExportableItem $item): bool
     {
-        // TODO(follow-up): implemented in a later task
-        throw new \LogicException(__METHOD__ . ' is not implemented yet.');
+        try {
+            $this->resolveHourlyRate($item);
+        } catch (UnusableEffectiveRateException) {
+            return false;
+        }
+
+        return true;
     }
 }
