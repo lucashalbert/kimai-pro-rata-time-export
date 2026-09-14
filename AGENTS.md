@@ -41,8 +41,8 @@ registration, export extension points), and why each was chosen:
   `docs/kimai-version-notes.md` §7 for the exact APIs, the non-persisted-`type` gotcha
   (`getValue()` returns a raw scalar unless a definition-event subscriber also ran in the
   same request), and the definition-event registration pattern
-  (`ProjectMetaDefinitionEvent`/`CustomerMetaDefinitionEvent`) that a later task still needs
-  to wire up before an admin can actually set these overrides through Kimai's UI.
+  (`ProjectMetaDefinitionEvent`/`CustomerMetaDefinitionEvent`) used to make
+  those overrides editable through Kimai's UI.
 - PHP's `DateTimeImmutable`/`DateTime` constructor silently ignores the `DateTimeZone`
   argument whenever the parsed string already carries a UTC offset (e.g.
   `'2026-03-08T01:30:00-05:00'`) — it builds a fixed-offset zone instead, so DST rules

@@ -412,10 +412,8 @@ subscribes to `App\Event\ProjectMetaDefinitionEvent` /
 `CustomerMetaDefinitionEvent` (dispatched while Kimai builds that entity's
 edit form) and calls
 `$event->getEntity()->setMetaField((new ProjectMeta())->setName(...)->setType(NumberType::class)->addConstraint(new Assert\Positive())->...)`
-when the field isn't already present. **This plugin does not register that
-subscriber yet** — it is a separate, already-filed follow-up task.
-`CompensationConfiguration` only resolves whatever value is already on the
-entity.
+when the field isn't already present. This plugin registers those fields through
+`EventSubscriber\OverrideFieldDefinitionSubscriber`.
 
 Sharp edge: `MetaTableTypeTrait`'s `type`/`label`/`required`/`constraints`/
 `options` properties carry no `#[ORM\Column]` — they are **not persisted**.
@@ -445,8 +443,11 @@ escalated to and confirmed by the captain rather than assumed — see the
 
 ### Consequence
 
-`CompensationConfiguration::getBaseRate(ExportableItem $item)` reads, most
-specific first: `$item->getProject()?->getMetaField(...)`,
+`EventSubscriber\OverrideFieldDefinitionSubscriber` defines the Project and
+Customer meta fields and the User preference so they appear in Kimai's native
+edit forms. `CompensationConfiguration::getBaseRate(ExportableItem $item)`
+reads those values, most specific first:
+`$item->getProject()?->getMetaField(...)`,
 `$item->getProject()?->getCustomer()?->getMetaField(...)`,
 `$item->getUser()?->getPreferenceValue(...)`, then the existing global
 `pro_rata_time_export.base_rate` config value. No new Kimai API beyond what's

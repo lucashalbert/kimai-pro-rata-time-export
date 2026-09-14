@@ -27,10 +27,8 @@ use App\Entity\ExportableItem;
  * present on Project and Customer in both 2.40.0 and 2.65.0 — see
  * docs/kimai-version-notes.md §7). Kimai's User entity does not implement
  * EntityWithMetaFields; the user-level override is instead read from Kimai's
- * separate UserPreference mechanism via User::getPreferenceValue(). Defining
- * these fields/preferences (so an admin can edit them) is a separate,
- * already-filed follow-up task — this class only resolves whichever value is
- * already there.
+ * separate UserPreference mechanism via User::getPreferenceValue(). The native
+ * edit fields are registered by OverrideFieldDefinitionSubscriber.
  */
 final class CompensationConfiguration
 {

@@ -19,5 +19,8 @@ services:
     KimaiPlugin\ProRataTimeExportBundle\DependencyInjection\:
         resource: '../../DependencyInjection/'
 
+    KimaiPlugin\ProRataTimeExportBundle\EventSubscriber\:
+        resource: '../../EventSubscriber/'
+
     KimaiPlugin\ProRataTimeExportBundle\Service\:
         resource: '../../Service/'
