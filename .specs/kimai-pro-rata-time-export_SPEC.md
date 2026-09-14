@@ -316,32 +316,87 @@ because silently producing an incorrect compensation-equivalent timecard is unac
 
 # 7. Employer Base Rate
 
-The plugin MUST have a configurable employer base rate.
+The plugin MUST have a configurable employer base rate: the rate at which
+equivalent time is represented.
 
-Example:
+The base rate MUST NOT be confused with Kimai's customer/project billing
+rates.
+
+## 7.1 Hierarchical Override
+
+The base rate is not a single global value. It MUST be resolvable per source
+record through a four-level hierarchy, most specific wins:
 
 ```text
-$150.00/hour
+1. Project override   (most specific)
+2. Customer override
+3. User override
+4. Global default      (least specific configured fallback)
 ```
 
-This is the rate at which equivalent time is represented.
+For a given source record, the plugin resolves the record's project, the
+project's customer, and the record's user, and uses the first level in that
+order that has a configured value. A level with no configured value is
+skipped; it does not disqualify a less specific level.
 
-The base rate MUST NOT be confused with Kimai's customer/project billing rates.
+## 7.2 Storage Per Level
 
-Suggested configuration:
+Levels are stored using Kimai's own native per-entity mechanisms — no
+plugin-owned database table or migration:
+
+```text
+Project override    Kimai meta field on the Project entity
+Customer override    Kimai meta field on the Customer entity
+User override        Kimai user preference on the User entity
+Global default        Plugin configuration (unchanged from the single-value design)
+```
+
+Project and Customer both implement Kimai's `EntityWithMetaFields` /
+`MetaTableTypeInterface` meta-field mechanism identically across the
+2.40.0–2.65.0 supported range: a plugin-defined meta field is edited through
+Kimai's existing Project/Customer edit forms, with no custom controller.
+
+`User` does **not** implement `EntityWithMetaFields` in any supported version.
+Kimai gives `User` a separate, equally native mechanism instead — user
+preferences (`UserPreference`, read via `User::getPreferenceValue()`) — edited
+through Kimai's existing user profile/preferences screen, again with no custom
+controller. The user-level override therefore uses this mechanism rather than
+a meta field. This is a deliberate, investigated choice (not a limitation):
+mixing the two native mechanisms across the hierarchy costs nothing in
+migrations or custom UI, at the cost of the override living in two different
+admin screens depending on level.
+
+Defining the meta fields/preference (so they are visible and editable in
+Kimai's admin UI) is implemented separately from resolving them; see
+`docs/kimai-version-notes.md` §7 for the exact registration APIs.
+
+The global default keeps its existing single-value configuration:
 
 ```yaml
-compensation_equivalent:
+pro_rata_time_export:
     base_rate: 150.00
 ```
 
-The configuration mechanism should follow current Kimai plugin configuration conventions.
+The configuration mechanism should follow current Kimai plugin configuration
+conventions.
 
-The plugin MUST validate:
+## 7.3 Validation
+
+The plugin MUST validate, independently at **every** level that has a
+configured value:
 
 ```text
-base_rate > 0
+value > 0
 ```
+
+An invalid or non-positive value at any level (zero, negative, or
+non-numeric) is an error and MUST be reported immediately. It MUST NOT be
+silently skipped in favor of a less specific level — a bad override must
+surface to whoever configured it, not quietly resolve to a different number
+that happens to look plausible.
+
+If no level has any configured value at all, the plugin fails with the
+existing "employer base rate is not configured" error (spec §32).
 
 ---
 
@@ -941,14 +996,14 @@ If future requirements demand an explicit "processed" workflow, it must be imple
 Minimum configuration:
 
 ```yaml
-compensation_equivalent:
+pro_rata_time_export:
     base_rate: 150.00
 ```
 
 Future configuration SHOULD support:
 
 ```yaml
-compensation_equivalent:
+pro_rata_time_export:
     base_rate: 150.00
 
     rounding:
@@ -2004,16 +2059,10 @@ The first version MUST NOT attempt to:
 
 The architecture SHOULD permit future support for:
 
-### Multiple employer base rates
+### Additional employer base rate scopes
 
-Different teams/employees could have different base rates.
-
-### Per-user base rate
-
-```text
-Alice → $150
-Bob → $135
-```
+Future versions may add scopes beyond the current project/customer/user/global
+hierarchy, such as team-level defaults or activity-level overrides.
 
 ### Employer project mapping
 

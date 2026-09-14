@@ -375,3 +375,81 @@ as **services**. Excluding the bundle class from the plugin's own
 `Resources/config/services.yaml` makes the plugin vanish from Kimai's plugin
 administration while the bundle still boots, routes still load and configuration
 still resolves — a silent half-registration with no error anywhere.
+
+---
+
+## 7. Per-entity base rate override storage (spec §7 hierarchy)
+
+Investigation for the spec §7 hierarchical base rate override (project >
+customer > user > global default). Verdict: **Project and Customer support
+Kimai's native meta-field mechanism identically in both versions; `User` does
+not and uses a different native mechanism instead.** Confirmed against the
+same `2.40.0`/`2.65.0` image sources as above.
+
+### Project/Customer: `EntityWithMetaFields`
+
+`App\Entity\Activity`, `Customer`, `Invoice`, `Project` and `Timesheet`
+implement `EntityWithMetaFields` — byte-for-byte identical interface and
+`MetaTableTypeTrait` implementation in both versions (2.65 only adds unused
+`section`/`formTheme` fields, irrelevant here):
+
+```php
+interface EntityWithMetaFields
+{
+    public function getMetaFields(): Collection;
+    public function getMetaField(string $name): ?MetaTableTypeInterface;
+    public function setMetaField(MetaTableTypeInterface $meta): EntityWithMetaFields;
+}
+```
+
+**Reading** a value (what `CompensationConfiguration` does) is just
+`$project->getMetaField('name')?->getValue()`.
+
+**Defining** a field — so it renders as an editable input on Kimai's own
+Project/Customer edit forms, which is the "reuses Kimai's own admin UI"
+property spec §7 relies on — is a separate step from reading it: a plugin
+subscribes to `App\Event\ProjectMetaDefinitionEvent` /
+`CustomerMetaDefinitionEvent` (dispatched while Kimai builds that entity's
+edit form) and calls
+`$event->getEntity()->setMetaField((new ProjectMeta())->setName(...)->setType(NumberType::class)->addConstraint(new Assert\Positive())->...)`
+on every definition event. `setMetaField()` merges by field name, preserving an
+existing value while reapplying non-persisted definition metadata. This plugin
+registers those fields through `EventSubscriber\OverrideFieldDefinitionSubscriber`.
+
+Sharp edge: `MetaTableTypeTrait`'s `type`/`label`/`required`/`constraints`/
+`options` properties carry no `#[ORM\Column]` — they are **not persisted**.
+Only `name`, `value` and `visible` come back from Doctrine. So
+`getMetaField()->getValue()` outside of a request that also ran the
+definition-event subscriber returns the **raw string** Doctrine loaded (not
+cast by `NumberType`, since `type` is `null` on that freshly-hydrated
+object) — `CompensationConfiguration` therefore parses/validates the value
+itself (`is_numeric()` + cast) rather than trusting a typed return.
+
+### User: no `EntityWithMetaFields` — `UserPreference` instead
+
+`App\Entity\User` does **not** implement `EntityWithMetaFields` in either
+version — grep confirms only `Activity`/`Customer`/`Invoice`/`Project`/
+`Timesheet` do. `User` has a structurally separate but equally native
+mechanism: `App\Entity\UserPreference` (own table
+`kimai2_user_preferences`, own admin surface — the user profile/preferences
+screen — registered the same way via a definition event), read through
+`User::getPreferenceValue(string $name, mixed $default = null, bool $allowNull = true): bool|int|float|string|null`.
+Same non-persisted-`type` caveat as meta fields: read it as a raw scalar and
+validate/cast in the plugin, don't rely on `NumberType` coercion.
+
+This asymmetry (two entities via meta fields, one via user preferences) was
+escalated to and confirmed by the captain rather than assumed — see the
+`fm/kimai-base-rate-hierarchy` task history. Both mechanisms are equally
+"native, no migration, existing admin UI"; they just don't share one screen.
+
+### Consequence
+
+`EventSubscriber\OverrideFieldDefinitionSubscriber` defines the Project and
+Customer meta fields and the User preference so they appear in Kimai's native
+edit forms. `CompensationConfiguration::getBaseRate(ExportableItem $item)`
+reads those values, most specific first:
+`$item->getProject()?->getMetaField(...)`,
+`$item->getProject()?->getCustomer()?->getMetaField(...)`,
+`$item->getUser()?->getPreferenceValue(...)`, then the existing global
+`pro_rata_time_export.base_rate` config value. No new Kimai API beyond what's
+listed above; identical across 2.40.0–2.65.0.

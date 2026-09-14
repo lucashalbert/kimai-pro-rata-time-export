@@ -30,14 +30,23 @@ then clear the cache (`bin/console kimai:reload`). The plugin appears under **Sy
 
 ## Configuration
 
-The employer base rate at which equivalent time is expressed, set in Kimai's `config/packages/local.yaml`:
+The employer base rate at which equivalent time is expressed is resolved per
+source record. Configure the global fallback in Kimai's
+`config/packages/local.yaml`:
 
 ```yaml
 pro_rata_time_export:
     base_rate: 150.00
 ```
 
-`base_rate` must be greater than zero. There is no default — an unconfigured instance fails with an explicit error rather than producing a silently wrong timecard.
+Project and customer overrides are available on Kimai's existing
+Project/Customer edit forms. User overrides are available through Kimai user
+preferences. The resolution order is project, customer, user, then global
+fallback.
+
+Every configured value must be greater than zero. There is no default — an
+unconfigured instance fails with an explicit error rather than producing a
+silently wrong timecard.
 
 ## Usage
 
