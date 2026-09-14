@@ -87,6 +87,24 @@ final class CompensationEquivalentAuditCsvExporterTest extends TestCase
         self::assertSame('1.50', $rows[1][15]);
     }
 
+    public function testAuditCsvIncludesSummaryReconciliationTotals(): void
+    {
+        $exporter = self::grantedExporter();
+        $alice = self::user('alice');
+        $projectA = self::project('Project A');
+        $projectB = self::project('Project B');
+
+        $itemA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 12:00:00', 180 * 60, 150.0, id: 1, project: $projectA, user: $alice);
+        $itemB = self::timesheet('2026-09-03 13:00:00', '2026-09-03 17:00:00', 240 * 60, 120.0, id: 2, project: $projectB, user: $alice);
+
+        $rows = self::csvRows($exporter->render([$itemA, $itemB], self::query()));
+
+        self::assertContains(['Actual Compensation Value', '930.00'], $rows);
+        self::assertContains(['Compensation Equivalent Time', '6:12'], $rows);
+        self::assertContains(['Equivalent Compensation Value', '930.00'], $rows);
+        self::assertContains(['Rounding Variance', '0.00'], $rows);
+    }
+
     public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
     {
         $exporter = self::grantedExporter();

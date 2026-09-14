@@ -72,7 +72,7 @@ final class CompensationEquivalentAuditCsvExporter extends AbstractSpreadsheetRe
         $file = $this->writeCsvFile(
             self::auditHeader(),
             \array_map(self::auditRow(...), $records),
-            self::warningRows($summary->getWarnings())
+            [[' '], ...self::summaryRows($summary)]
         );
 
         return $this->getFileResponse(

@@ -74,7 +74,7 @@ final class CompensationEquivalentEmployerCsvExporter extends AbstractSpreadshee
         $file = $this->writeCsvFile(
             self::employerHeader(),
             \array_map(self::employerRow(...), $records),
-            self::warningRows($summary->getWarnings())
+            [[' '], ...self::summaryRows($summary)]
         );
 
         return $this->getFileResponse(

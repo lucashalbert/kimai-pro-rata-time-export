@@ -43,7 +43,24 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
         self::assertSame(['Date', 'User', 'Project', 'Start', 'End'], $rows[0]);
         self::assertSame(['2026-09-03', 'alice', 'Project A', '09:00', '12:00'], $rows[1]);
         self::assertSame(['2026-09-03', 'alice', 'Project B', '13:00', '16:12'], $rows[2]);
-        self::assertCount(3, $rows);
+    }
+
+    public function testCsvIncludesSummaryReconciliationTotals(): void
+    {
+        $exporter = self::grantedExporter();
+        $alice = self::user('alice');
+        $projectA = self::project('Project A');
+        $projectB = self::project('Project B');
+
+        $itemA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 12:00:00', 180 * 60, 150.0, id: 1, project: $projectA, user: $alice);
+        $itemB = self::timesheet('2026-09-03 13:00:00', '2026-09-03 17:00:00', 240 * 60, 120.0, id: 2, project: $projectB, user: $alice);
+
+        $rows = self::csvRows($exporter->render([$itemA, $itemB], self::query()));
+
+        self::assertContains(['Actual Compensation Value', '930.00'], $rows);
+        self::assertContains(['Compensation Equivalent Time', '6:12'], $rows);
+        self::assertContains(['Equivalent Compensation Value', '930.00'], $rows);
+        self::assertContains(['Rounding Variance', '0.00'], $rows);
     }
 
     public function testCsvShowsEndDateForMidnightCrossingEquivalentRows(): void
