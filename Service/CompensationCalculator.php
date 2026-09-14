@@ -150,13 +150,6 @@ final class CompensationCalculator
 
         $records = self::attachOverlapWarnings($records, $survivingItems);
 
-        foreach ($runningWarnings as $warning) {
-            $records = array_map(
-                static fn (CompensationEquivalentRecord $record): CompensationEquivalentRecord => $record->withWarning($warning),
-                $records
-            );
-        }
-
         return new CompensationCalculationResult($records, $runningWarnings);
     }
 
@@ -175,7 +168,7 @@ final class CompensationCalculator
 
         for ($i = 0; $i < $count; ++$i) {
             for ($j = $i + 1; $j < $count; ++$j) {
-                if (!self::overlaps($items[$i], $items[$j])) {
+                if (!self::sameUser($items[$i], $items[$j]) || !self::overlaps($items[$i], $items[$j])) {
                     continue;
                 }
 
@@ -190,6 +183,29 @@ final class CompensationCalculator
     private static function overlaps(ExportableItem $a, ExportableItem $b): bool
     {
         return $a->getBegin() < $b->getEnd() && $b->getBegin() < $a->getEnd();
+    }
+
+    private static function sameUser(ExportableItem $a, ExportableItem $b): bool
+    {
+        $userA = $a->getUser();
+        $userB = $b->getUser();
+
+        if ($userA === $userB) {
+            return true;
+        }
+
+        if (null === $userA || null === $userB) {
+            return false;
+        }
+
+        $idA = $userA->getId();
+        $idB = $userB->getId();
+
+        if (null !== $idA && null !== $idB) {
+            return $idA === $idB;
+        }
+
+        return '' !== $userA->getUserIdentifier() && $userA->getUserIdentifier() === $userB->getUserIdentifier();
     }
 
     /**

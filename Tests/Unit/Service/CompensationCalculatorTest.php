@@ -63,6 +63,14 @@ final class CompensationCalculatorTest extends TestCase
         ));
     }
 
+    private static function user(string $identifier): User
+    {
+        $user = new User();
+        $user->setUserIdentifier($identifier);
+
+        return $user;
+    }
+
     /**
      * @param int $id     a distinct id per fixture keeps warning messages/assertions unambiguous
      */
@@ -142,7 +150,7 @@ final class CompensationCalculatorTest extends TestCase
         self::assertSame(3, $record->getSourceTimesheetId());
     }
 
-    public function testCalculateAllExcludesARunningRecordWithAWarningOnTheSurvivingRecords(): void
+    public function testCalculateAllExcludesARunningRecordWithOnlyABatchWarning(): void
     {
         $completed = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 10);
         $running = self::timesheet('2026-09-03 11:00:00', null, 0, 150.0, id: 11);
@@ -154,11 +162,7 @@ final class CompensationCalculatorTest extends TestCase
 
         self::assertCount(1, $records);
         self::assertSame(10, $records[0]->getSourceTimesheetId());
-
-        $warnings = $records[0]->getWarnings();
-        self::assertCount(1, $warnings);
-        self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $warnings[0]->reason);
-        self::assertSame(11, $warnings[0]->sourceTimesheetId);
+        self::assertSame([], $records[0]->getWarnings());
 
         self::assertCount(1, $result->getWarnings());
         self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $result->getWarnings()[0]->reason);
@@ -207,8 +211,9 @@ final class CompensationCalculatorTest extends TestCase
      */
     public function testOverlappingSourceRecordsAreEachTransformedIndependentlyWithAWarning(): void
     {
-        $a = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 30);
-        $b = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 2 * 3600, 150.0, id: 31);
+        $alice = self::user('alice');
+        $a = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 30, user: $alice);
+        $b = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 2 * 3600, 150.0, id: 31, user: $alice);
 
         $records = $this->calculator->calculateAll([$a, $b])->getRecords();
 
@@ -227,6 +232,20 @@ final class CompensationCalculatorTest extends TestCase
         self::assertSame(CompensationWarningReason::OVERLAPPING_SOURCE_RECORDS, $warningsB[0]->reason);
         self::assertSame(31, $warningsB[0]->sourceTimesheetId);
         self::assertStringContainsString('#30', $warningsB[0]->message);
+    }
+
+    public function testOverlappingRecordsForDifferentUsersProduceNoOverlapWarning(): void
+    {
+        $alice = self::user('alice');
+        $bob = self::user('bob');
+        $a = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 32, user: $alice);
+        $b = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 33, user: $bob);
+
+        $records = $this->calculator->calculateAll([$a, $b])->getRecords();
+
+        self::assertCount(2, $records);
+        self::assertSame([], $records[0]->getWarnings());
+        self::assertSame([], $records[1]->getWarnings());
     }
 
     public function testNonOverlappingRecordsProduceNoOverlapWarning(): void
