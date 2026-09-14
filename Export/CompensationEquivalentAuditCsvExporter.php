@@ -18,6 +18,7 @@ use App\Export\RendererInterface;
 use App\Export\TimesheetExportInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 
@@ -32,9 +33,11 @@ final class CompensationEquivalentAuditCsvExporter extends AbstractSpreadsheetRe
     use CompensationRowFormatter;
     use WritesCsvFile;
     use ChecksRatePermission;
+    use ChecksMarkAsExported;
 
     public function __construct(
         private readonly CompensationCalculator $calculator,
+        private readonly ReconciliationService $reconciliationService,
         private readonly Security $security,
     ) {
     }
@@ -59,11 +62,18 @@ final class CompensationEquivalentAuditCsvExporter extends AbstractSpreadsheetRe
      */
     public function render(array $exportItems, TimesheetQuery $query): Response
     {
+        $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
-        $records = $this->calculator->calculateAll($exportItems)->getRecords();
+        $result = $this->calculator->calculateAll($exportItems);
+        $records = $result->getRecords();
+        $summary = $this->reconciliationService->summarize($result, $query->getBegin(), $query->getEnd());
 
-        $file = $this->writeCsvFile(self::auditHeader(), \array_map(self::auditRow(...), $records));
+        $file = $this->writeCsvFile(
+            self::auditHeader(),
+            \array_map(self::auditRow(...), $records),
+            self::warningRows($summary->getWarnings())
+        );
 
         return $this->getFileResponse(
             $file->getPathname(),

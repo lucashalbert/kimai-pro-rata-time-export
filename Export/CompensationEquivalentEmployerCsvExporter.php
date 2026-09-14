@@ -18,13 +18,14 @@ use App\Export\RendererInterface;
 use App\Export\TimesheetExportInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
+use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
  * The employer-facing timecard (spec §22): the minimal Date/User/Project/
  * Start/End field set, using the compensation-equivalent start and end times,
- * never the actual ones. Carries no rate/compensation data, so it is not
- * gated behind the rate-viewing permission (spec §18, §31).
+ * never the actual ones. Gated behind the rate-viewing permission (spec §18, §31).
  *
  * Registered for both the Export screen and the Timesheet list export
  * dropdown (spec §4).
@@ -33,9 +34,14 @@ final class CompensationEquivalentEmployerCsvExporter extends AbstractSpreadshee
 {
     use CompensationRowFormatter;
     use WritesCsvFile;
+    use ChecksRatePermission;
+    use ChecksMarkAsExported;
 
-    public function __construct(private readonly CompensationCalculator $calculator)
-    {
+    public function __construct(
+        private readonly CompensationCalculator $calculator,
+        private readonly ReconciliationService $reconciliationService,
+        private readonly Security $security,
+    ) {
     }
 
     public function getId(): string
@@ -58,9 +64,18 @@ final class CompensationEquivalentEmployerCsvExporter extends AbstractSpreadshee
      */
     public function render(array $exportItems, TimesheetQuery $query): Response
     {
-        $records = $this->calculator->calculateAll($exportItems)->getRecords();
+        $this->assertDoesNotMarkSourceTimesheets($query);
+        $this->assertRateVisible($this->security, $query);
 
-        $file = $this->writeCsvFile(self::employerHeader(), \array_map(self::employerRow(...), $records));
+        $result = $this->calculator->calculateAll($exportItems);
+        $records = $result->getRecords();
+        $summary = $this->reconciliationService->summarize($result, $query->getBegin(), $query->getEnd());
+
+        $file = $this->writeCsvFile(
+            self::employerHeader(),
+            \array_map(self::employerRow(...), $records),
+            self::warningRows($summary->getWarnings())
+        );
 
         return $this->getFileResponse(
             $file->getPathname(),

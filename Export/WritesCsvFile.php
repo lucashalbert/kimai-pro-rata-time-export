@@ -23,10 +23,11 @@ use OpenSpout\Writer\CSV\Writer;
 trait WritesCsvFile
 {
     /**
-     * @param string[]                $header
-     * @param iterable<list<string>>  $rows
+     * @param string[]               $header
+     * @param iterable<list<string>> $rows
+     * @param list<list<string>>     $footerRows
      */
-    private function writeCsvFile(array $header, iterable $rows): \SplFileInfo
+    private function writeCsvFile(array $header, iterable $rows, array $footerRows = []): \SplFileInfo
     {
         $filename = @tempnam(sys_get_temp_dir(), 'pro-rata-csv');
         if (false === $filename) {
@@ -41,6 +42,10 @@ trait WritesCsvFile
         $writer->addRow(Row::fromValues($header));
 
         foreach ($rows as $row) {
+            $writer->addRow(Row::fromValues($row));
+        }
+
+        foreach ($footerRows as $row) {
             $writer->addRow(Row::fromValues($row));
         }
 

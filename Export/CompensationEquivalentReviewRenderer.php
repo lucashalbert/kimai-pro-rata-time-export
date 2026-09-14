@@ -37,6 +37,7 @@ use Twig\Environment;
 final class CompensationEquivalentReviewRenderer implements RendererInterface
 {
     use ChecksRatePermission;
+    use ChecksMarkAsExported;
 
     public function __construct(
         private readonly CompensationCalculator $calculator,
@@ -61,6 +62,7 @@ final class CompensationEquivalentReviewRenderer implements RendererInterface
      */
     public function render(array $exportItems, TimesheetQuery $query): Response
     {
+        $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
         $result = $this->calculator->calculateAll($exportItems);

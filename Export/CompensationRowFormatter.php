@@ -12,6 +12,8 @@ declare(strict_types=1);
 namespace KimaiPlugin\ProRataTimeExportBundle\Export;
 
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationEquivalentRecord;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationEquivalentSummary;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarning;
 
 /**
  * Deterministic row/header formatting shared by the employer, audit and XLSX
@@ -87,6 +89,76 @@ trait CompensationRowFormatter
             'Equivalent Start', 'Equivalent End', 'Equivalent Duration',
             'Actual Compensation', 'Equivalent Compensation', 'Rounding Difference',
         ];
+    }
+
+    /**
+     * @param CompensationWarning[] $warnings
+     *
+     * @return list<list<string>>
+     */
+    private static function warningRows(array $warnings): array
+    {
+        if ([] === $warnings) {
+            return [];
+        }
+
+        return [
+            [' '],
+            ['Warnings'],
+            ...\array_map(static fn (CompensationWarning $warning): array => [$warning->message], $warnings),
+        ];
+    }
+
+    /**
+     * @return list<list<string>>
+     */
+    private static function summaryRows(CompensationEquivalentSummary $summary): array
+    {
+        $rows = [
+            ['Summary'],
+            ['Reporting Period', self::formatPeriod($summary)],
+            ['Users', (string) $summary->getUserCount()],
+            ['Source Records', (string) $summary->getSourceRecordCount()],
+            ['Actual Recorded Time', self::formatDurationMinutes(\intdiv($summary->getActualTotalDurationSeconds(), 60))],
+            ['Actual Compensation Value', $summary->getActualCompensationValue()->format()],
+            ['Compensation Equivalent Time', self::formatDurationMinutes($summary->getEquivalentTotalDurationMinutes())],
+            ['Equivalent Compensation Value', $summary->getEquivalentCompensationValue()->format()],
+            ['Employer Base Rate', null !== $summary->getBaseRate() ? self::formatRate($summary->getBaseRate()) . '/hr' : '(varies by record)'],
+            ['Rounding Variance', $summary->getRoundingVariance()->format()],
+            ['Plugin Version', $summary->getPluginVersion()],
+            ['Calculation Version', (string) $summary->getCalculationVersion()],
+            ['Generated At', $summary->getGeneratedAt()->format('Y-m-d H:i')],
+            [' '],
+            ['Per-User Totals'],
+            ['User', 'Actual', 'Actual Value', 'Equivalent', 'Equivalent Value'],
+        ];
+
+        foreach ($summary->getPerUserTotals() as $userTotal) {
+            $rows[] = [
+                $userTotal->getUser()?->getDisplayName() ?? '(unknown)',
+                self::formatDurationMinutes(\intdiv($userTotal->getActualDurationSeconds(), 60)),
+                $userTotal->getActualValue()->format(),
+                self::formatDurationMinutes($userTotal->getEquivalentDurationMinutes()),
+                $userTotal->getEquivalentValue()->format(),
+            ];
+        }
+
+        return [
+            ...$rows,
+            ...self::warningRows($summary->getWarnings()),
+        ];
+    }
+
+    private static function formatPeriod(CompensationEquivalentSummary $summary): string
+    {
+        $start = $summary->getReportingPeriodStart();
+        $end = $summary->getReportingPeriodEnd();
+
+        if (null === $start || null === $end) {
+            return '(not specified)';
+        }
+
+        return $start->format('Y-m-d') . ' - ' . $end->format('Y-m-d');
     }
 
     private static function formatDurationMinutes(int $totalMinutes): string

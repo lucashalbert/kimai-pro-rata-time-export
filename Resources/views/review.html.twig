@@ -119,7 +119,7 @@
         <th rowspan="2">Customer</th>
         <th rowspan="2">Project</th>
         <th rowspan="2">Activity</th>
-        <th class="actual-group" colspan="4">ACTUAL / RECORDED</th>
+        <th class="actual-group" colspan="5">ACTUAL / RECORDED</th>
         <th class="equivalent-group" colspan="6">COMPENSATION EQUIVALENT</th>
         <th rowspan="2">Difference</th>
         <th rowspan="2">Source ID</th>
@@ -129,6 +129,7 @@
         <th class="actual-col">End</th>
         <th class="actual-col">Duration</th>
         <th class="actual-col">Effective Rate</th>
+        <th class="actual-col">Actual Value</th>
         <th class="equivalent-col">Base Rate</th>
         <th class="equivalent-col">Factor</th>
         <th class="equivalent-col">Start</th>
@@ -149,6 +150,7 @@
             <td class="actual-col">{{ record.actualEnd.format('H:i') }}</td>
             <td class="actual-col">{{ (record.actualDurationSeconds // 3600) }}:{{ '%02d'|format((record.actualDurationSeconds % 3600) // 60) }}</td>
             <td class="actual-col">{{ '%.2f'|format(record.effectiveHourlyRate) }}</td>
+            <td class="actual-col">{{ record.actualValue.format() }}</td>
             <td class="equivalent-col">{{ '%.2f'|format(record.baseRate) }}</td>
             <td class="equivalent-col">{{ '%.6f'|format(record.factor) }}</td>
             <td class="equivalent-col">{{ record.equivalentStart.format('H:i') }}</td>
@@ -160,7 +162,7 @@
         </tr>
         {% if record.warnings|length > 0 %}
             <tr>
-                <td colspan="17" style="background:#fff3cd;">
+                <td colspan="18" style="background:#fff3cd;">
                     {% for warning in record.warnings %}
                         &#9888; {{ warning.message }}{% if not loop.last %}<br>{% endif %}
                     {% endfor %}

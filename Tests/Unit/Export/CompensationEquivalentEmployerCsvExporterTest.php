@@ -13,8 +13,10 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Export;
 
 use App\Entity\Timesheet;
 use KimaiPlugin\ProRataTimeExportBundle\Export\CompensationEquivalentEmployerCsvExporter;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
+use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
  * @see .specs/kimai-pro-rata-time-export_SPEC.md §22 (employer field set/example), §50 (CSV requirements)
@@ -25,7 +27,7 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
 
     public function testProducesHeaderAndDeterministicColumnsForTheSpecSection46Example(): void
     {
-        $exporter = new CompensationEquivalentEmployerCsvExporter(self::calculator());
+        $exporter = self::grantedExporter();
         $alice = self::user('alice');
         $projectA = self::project('Project A');
         $projectB = self::project('Project B');
@@ -46,7 +48,7 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
 
     public function testMultiUserRecordsPreserveUserIdentityWithoutLeakage(): void
     {
-        $exporter = new CompensationEquivalentEmployerCsvExporter(self::calculator());
+        $exporter = self::grantedExporter();
         $alice = self::user('alice');
         $bob = self::user('bob');
 
@@ -62,7 +64,7 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
 
     public function testDoesNotMutateSourceTimesheets(): void
     {
-        $exporter = new CompensationEquivalentEmployerCsvExporter(self::calculator());
+        $exporter = self::grantedExporter();
         $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 20);
 
         $before = self::snapshot($item);
@@ -70,6 +72,58 @@ final class CompensationEquivalentEmployerCsvExporterTest extends TestCase
         $after = self::snapshot($item);
 
         self::assertSame($before, $after);
+    }
+
+    public function testDeniesAccessWithoutTheRateViewingPermission(): void
+    {
+        $exporter = new CompensationEquivalentEmployerCsvExporter(
+            self::calculator(),
+            new ReconciliationService(),
+            new FakeSecurity(self::user('viewer'), grantedPermissions: [])
+        );
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 1);
+
+        $this->expectException(AccessDeniedException::class);
+
+        $exporter->render([$item], self::query());
+    }
+
+    public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 1);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('cannot mark source Kimai timesheets as exported');
+
+        $exporter->render([$item], self::markAsExportedQuery());
+    }
+
+    public function testCsvSurfacesRunningRecordAndOverlapWarnings(): void
+    {
+        $exporter = self::grantedExporter();
+        $user = self::user('alice');
+        $completed = self::timesheet('2026-09-03 08:00:00', '2026-09-03 09:00:00', 3600, 150.0, id: 1, user: $user);
+        $overlapA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 7200, 150.0, id: 2, user: $user);
+        $overlapB = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 7200, 150.0, id: 3, user: $user);
+        $running = self::timesheet('2026-09-03 12:00:00', null, 0, 150.0, id: 4, user: $user);
+
+        $rows = self::csvRows($exporter->render([$completed, $overlapA, $overlapB, $running], self::query()));
+        $warningText = \implode("\n", \array_map(static fn (array $row): string => \implode(' ', $row), $rows));
+
+        self::assertStringContainsString('Warnings', $warningText);
+        self::assertStringContainsString('Timesheet #4 is currently running and was excluded.', $warningText);
+        self::assertStringContainsString('Timesheet #2 overlaps Timesheet #3', $warningText);
+        self::assertStringContainsString('Timesheet #3 overlaps Timesheet #2', $warningText);
+    }
+
+    private static function grantedExporter(): CompensationEquivalentEmployerCsvExporter
+    {
+        return new CompensationEquivalentEmployerCsvExporter(
+            self::calculator(),
+            new ReconciliationService(),
+            new FakeSecurity(self::user('admin'), grantedPermissions: ['view_rate_other_timesheet', 'view_rate_own_timesheet'])
+        );
     }
 
     /**

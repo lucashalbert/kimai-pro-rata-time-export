@@ -42,6 +42,17 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
         $renderer->render([$item], self::query());
     }
 
+    public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
+    {
+        $renderer = self::grantedRenderer();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 1);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('cannot mark source Kimai timesheets as exported');
+
+        $renderer->render([$item], self::markAsExportedQuery());
+    }
+
     public function testRendersPerRecordTableSummaryAndWarningsForTheSpecWorkedExamples(): void
     {
         $renderer = self::grantedRenderer();
@@ -52,20 +63,21 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
         $projectB = self::project('Project B');
         $itemA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 12:00:00', 180 * 60, 150.0, id: 1, project: $projectA, user: $alice);
         $itemB = self::timesheet('2026-09-03 13:00:00', '2026-09-03 17:00:00', 240 * 60, 120.0, id: 2, project: $projectB, user: $alice);
+        $roundingItem = self::timesheet('2026-09-04 09:17:00', '2026-09-04 09:54:00', 37 * 60, 120.0, id: 5, project: $projectB, user: $alice);
 
         // an overlapping pair to force a disclosed warning (spec §13).
         $overlapA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 3, user: $alice);
         $overlapB = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 2 * 3600, 150.0, id: 4, user: $alice);
 
-        $html = $renderer->render([$itemA, $itemB, $overlapA, $overlapB], self::query())->getContent();
+        $html = $renderer->render([$itemA, $itemB, $roundingItem, $overlapA, $overlapB], self::query())->getContent();
 
         // per-record detail: actual and equivalent values are both visible.
         self::assertStringContainsString('16:12', $html); // Project B equivalent end
+        self::assertStringContainsString('Actual Value', $html);
+        self::assertStringContainsString('74.00', $html); // actual value from spec §47 terminology/field
         self::assertStringContainsString('450.00', $html); // Project A actual/equivalent value
         self::assertStringContainsString('480.00', $html); // Project B actual/equivalent value
 
-        // summary block (spec §20): reconciles to zero variance across the two spec §46 records
-        // plus the (zero-variance, same-rate) overlap pair.
         self::assertStringContainsString('0.00', $html);
 
         // warnings are surfaced, not buried (spec §13, §32, §33).

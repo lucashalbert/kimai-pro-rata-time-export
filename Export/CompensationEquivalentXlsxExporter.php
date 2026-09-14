@@ -18,6 +18,7 @@ use App\Export\RendererInterface;
 use App\Export\TimesheetExportInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
 use Symfony\Bundle\SecurityBundle\Security;
@@ -43,6 +44,7 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
 {
     use CompensationRowFormatter;
     use ChecksRatePermission;
+    use ChecksMarkAsExported;
 
     private const NOTE = 'Actual values represent source Kimai records. Equivalent values represent '
         . 'compensation-equivalent time at the configured employer base rate. Source Kimai timesheets '
@@ -50,6 +52,7 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
 
     public function __construct(
         private readonly CompensationCalculator $calculator,
+        private readonly ReconciliationService $reconciliationService,
         private readonly Security $security,
     ) {
     }
@@ -74,9 +77,12 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
      */
     public function render(array $exportItems, TimesheetQuery $query): Response
     {
+        $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
-        $records = $this->calculator->calculateAll($exportItems)->getRecords();
+        $result = $this->calculator->calculateAll($exportItems);
+        $records = $result->getRecords();
+        $summary = $this->reconciliationService->summarize($result, $query->getBegin(), $query->getEnd());
 
         $filename = @tempnam(sys_get_temp_dir(), 'pro-rata-xlsx');
         if (false === $filename) {
@@ -87,10 +93,27 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
         $writer->openToFile($filename);
 
         $writer->getCurrentSheet()->setName('Employer Timecard');
-        self::writeSheet($writer, self::employerHeader(), \array_map(self::employerRow(...), $records));
+        self::writeSheet(
+            $writer,
+            self::employerHeader(),
+            \array_map(self::employerRow(...), $records),
+            self::warningRows($summary->getWarnings())
+        );
 
         $writer->addNewSheetAndMakeItCurrent()->setName('Reconciliation');
-        self::writeSheet($writer, self::auditHeader(), \array_map(self::auditRow(...), $records));
+        self::writeSheet(
+            $writer,
+            self::auditHeader(),
+            \array_map(self::auditRow(...), $records),
+            self::warningRows($summary->getWarnings())
+        );
+
+        $writer->addNewSheetAndMakeItCurrent()->setName('Summary');
+        self::writeRows($writer, [
+            [self::NOTE],
+            [' '],
+            ...self::summaryRows($summary),
+        ]);
 
         $writer->close();
 
@@ -104,8 +127,9 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
     /**
      * @param string[]           $header
      * @param list<list<string>> $rows
+     * @param list<list<string>> $footerRows
      */
-    private static function writeSheet(Writer $writer, array $header, array $rows): void
+    private static function writeSheet(Writer $writer, array $header, array $rows, array $footerRows = []): void
     {
         $writer->addRow(Row::fromValues([self::NOTE]));
         // A single space, not an empty string: OpenSpout drops a row containing
@@ -114,6 +138,15 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
         $writer->addRow(Row::fromValues([' ']));
         $writer->addRow(Row::fromValues($header));
 
+        self::writeRows($writer, $rows);
+        self::writeRows($writer, $footerRows);
+    }
+
+    /**
+     * @param list<list<string>> $rows
+     */
+    private static function writeRows(Writer $writer, array $rows): void
+    {
         foreach ($rows as $row) {
             $writer->addRow(Row::fromValues($row));
         }

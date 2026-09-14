@@ -13,13 +13,14 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Export;
 
 use App\Entity\Timesheet;
 use KimaiPlugin\ProRataTimeExportBundle\Export\CompensationEquivalentXlsxExporter;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use OpenSpout\Reader\XLSX\Reader;
 use PHPUnit\Framework\TestCase;
 use Symfony\Component\HttpFoundation\BinaryFileResponse;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
- * @see .specs/kimai-pro-rata-time-export_SPEC.md §51 (two worksheets: Employer Timecard, Reconciliation)
+ * @see .specs/kimai-pro-rata-time-export_SPEC.md §51 (worksheets: Employer Timecard, Reconciliation, Summary)
  */
 final class CompensationEquivalentXlsxExporterTest extends TestCase
 {
@@ -29,6 +30,7 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
     {
         $exporter = new CompensationEquivalentXlsxExporter(
             self::calculator(),
+            new ReconciliationService(),
             new FakeSecurity(self::user('viewer'), grantedPermissions: [])
         );
         $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 1);
@@ -38,7 +40,7 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
         $exporter->render([$item], self::query());
     }
 
-    public function testProducesTwoNamedWorksheetsWithTheExpectedRowCounts(): void
+    public function testProducesThreeNamedWorksheetsWithSummaryFigures(): void
     {
         $exporter = self::grantedExporter();
         $projectA = self::project('Project A');
@@ -51,7 +53,7 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
 
         $sheets = self::readWorkbook($response->getFile()->getPathname());
 
-        self::assertSame(['Employer Timecard', 'Reconciliation'], \array_keys($sheets));
+        self::assertSame(['Employer Timecard', 'Reconciliation', 'Summary'], \array_keys($sheets));
 
         // note row, blank row, header row, 2 data rows
         self::assertCount(5, $sheets['Employer Timecard']);
@@ -61,6 +63,43 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
         self::assertCount(5, $sheets['Reconciliation']);
         self::assertSame('Source Timesheet ID', $sheets['Reconciliation'][2][0]);
         self::assertSame('0.800000', $sheets['Reconciliation'][4][11]);
+
+        self::assertSame('Summary', $sheets['Summary'][2][0]);
+        self::assertContains(['Users', '2'], $sheets['Summary']);
+        self::assertContains(['Source Records', '2'], $sheets['Summary']);
+        self::assertContains(['Actual Compensation Value', '930.00'], $sheets['Summary']);
+        self::assertContains(['Compensation Equivalent Time', '6:12'], $sheets['Summary']);
+        self::assertContains(['Rounding Variance', '0.00'], $sheets['Summary']);
+    }
+
+    public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 1);
+
+        $this->expectException(\RuntimeException::class);
+        $this->expectExceptionMessage('cannot mark source Kimai timesheets as exported');
+
+        $exporter->render([$item], self::markAsExportedQuery());
+    }
+
+    public function testWorkbookSurfacesRunningRecordAndOverlapWarnings(): void
+    {
+        $exporter = self::grantedExporter();
+        $user = self::user('alice');
+        $completed = self::timesheet('2026-09-03 08:00:00', '2026-09-03 09:00:00', 3600, 150.0, id: 1, user: $user);
+        $overlapA = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 7200, 150.0, id: 2, user: $user);
+        $overlapB = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 7200, 150.0, id: 3, user: $user);
+        $running = self::timesheet('2026-09-03 12:00:00', null, 0, 150.0, id: 4, user: $user);
+
+        $response = $exporter->render([$completed, $overlapA, $overlapB, $running], self::query());
+        $sheets = self::readWorkbook($response->getFile()->getPathname());
+        $warningText = \implode("\n", \array_map(static fn (array $row): string => \implode(' ', $row), $sheets['Summary']));
+
+        self::assertStringContainsString('Warnings', $warningText);
+        self::assertStringContainsString('Timesheet #4 is currently running and was excluded.', $warningText);
+        self::assertStringContainsString('Timesheet #2 overlaps Timesheet #3', $warningText);
+        self::assertStringContainsString('Timesheet #3 overlaps Timesheet #2', $warningText);
     }
 
     public function testDoesNotMutateSourceTimesheets(): void
@@ -79,6 +118,7 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
     {
         return new CompensationEquivalentXlsxExporter(
             self::calculator(),
+            new ReconciliationService(),
             new FakeSecurity(self::user('admin'), grantedPermissions: ['view_rate_other_timesheet', 'view_rate_own_timesheet'])
         );
     }

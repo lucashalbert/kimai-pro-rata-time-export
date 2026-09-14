@@ -18,6 +18,7 @@ use App\Entity\Customer;
 use App\Entity\Project;
 use App\Entity\Timesheet;
 use App\Entity\User;
+use App\Repository\Query\ExportQuery;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
@@ -79,7 +80,7 @@ trait ExportTestFixtures
      */
     private static function timesheet(
         string $begin,
-        string $end,
+        ?string $end,
         int $duration,
         ?float $hourlyRate,
         int $id,
@@ -90,7 +91,9 @@ trait ExportTestFixtures
         $timezone = new \DateTimeZone('UTC');
         $record = new Timesheet();
         $record->setBegin(new \DateTime($begin, $timezone));
-        $record->setEnd(new \DateTime($end, $timezone));
+        if (null !== $end) {
+            $record->setEnd(new \DateTime($end, $timezone));
+        }
         $record->setDuration($duration);
         $record->setHourlyRate($hourlyRate);
         $record->setRate(($hourlyRate ?? 0.0) * ($duration / 3600));
@@ -108,6 +111,15 @@ trait ExportTestFixtures
     {
         $query = new TimesheetQuery();
         $query->setUser($user);
+
+        return $query;
+    }
+
+    private static function markAsExportedQuery(?User $user = null): TimesheetQuery
+    {
+        $query = new ExportQuery();
+        $query->setUser($user);
+        $query->setMarkAsExported(true);
 
         return $query;
     }
