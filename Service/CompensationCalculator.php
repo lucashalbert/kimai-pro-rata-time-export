@@ -13,6 +13,7 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Service;
 
 use App\Entity\ExportableItem;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationCalculationResult;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationEquivalentRecord;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarning;
 use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
@@ -125,19 +126,13 @@ final class CompensationCalculator
      * equivalent interval (spec §14). Warnings are collected on the returned
      * records/summary rather than being logged and dropped (spec §32, §33).
      *
-     * Every running-record warning is attached to every surviving record in
-     * this batch, since the excluded record itself never produces one to
-     * carry it (ReconciliationService::summarize() de-duplicates before
-     * showing them once). A batch excluding every item this way has no
-     * surviving record to attach the warning to; that is an accepted gap for
-     * v1 given real export batches are never entirely running timesheets.
+     * Running-record warnings are returned at batch level because the excluded
+     * record itself never produces a CompensationEquivalentRecord to carry one.
      *
      * @param ExportableItem[] $items the array Kimai's export pipeline provides,
      *                                already filtered and permission-scoped (spec §18, §31)
-     *
-     * @return CompensationEquivalentRecord[]
      */
-    public function calculateAll(array $items): array
+    public function calculateAll(array $items): CompensationCalculationResult
     {
         $records = [];
         $survivingItems = [];
@@ -162,7 +157,7 @@ final class CompensationCalculator
             );
         }
 
-        return $records;
+        return new CompensationCalculationResult($records, $runningWarnings);
     }
 
     /**

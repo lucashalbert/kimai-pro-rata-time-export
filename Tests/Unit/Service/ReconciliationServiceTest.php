@@ -14,10 +14,12 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Service;
 use App\Entity\ExportableItem;
 use App\Entity\Timesheet;
 use App\Entity\User;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationCalculationResult;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationEquivalentRecord;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationEquivalentSummary;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationUserTotal;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarning;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarningReason;
 use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
 use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use PHPUnit\Framework\TestCase;
@@ -180,6 +182,46 @@ final class ReconciliationServiceTest extends TestCase
         self::assertNull($summary->getReportingPeriodEnd());
         self::assertSame([], $summary->getPerUserTotals());
         self::assertSame([], $summary->getWarnings());
+    }
+
+    public function testSummarizeCarriesBatchWarningsWhenEveryInputRecordWasExcluded(): void
+    {
+        $warning = CompensationWarning::runningRecordExcluded(self::fakeItem(991));
+        $summary = $this->service->summarize(new CompensationCalculationResult([], [$warning]));
+
+        self::assertSame(0, $summary->getSourceRecordCount());
+        self::assertSame([], $summary->getPerUserTotals());
+        self::assertCount(1, $summary->getWarnings());
+        self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $summary->getWarnings()[0]->reason);
+        self::assertSame(991, $summary->getWarnings()[0]->sourceTimesheetId);
+    }
+
+    public function testSummarizeUsesSuppliedReportingPeriodOverRecordExtents(): void
+    {
+        $records = [
+            self::record(1, null, '2026-09-05 09:00:00', '2026-09-05 10:00:00', 3600, 60, '150.00', '150.00'),
+            self::record(2, null, '2026-09-20 09:00:00', '2026-09-20 10:00:00', 3600, 60, '150.00', '150.00'),
+        ];
+        $periodStart = new \DateTimeImmutable('2026-09-01 00:00:00', new \DateTimeZone('UTC'));
+        $periodEnd = new \DateTimeImmutable('2026-09-30 23:59:59', new \DateTimeZone('UTC'));
+
+        $summary = $this->service->summarize($records, $periodStart, $periodEnd);
+
+        self::assertSame($periodStart, $summary->getReportingPeriodStart());
+        self::assertSame($periodEnd, $summary->getReportingPeriodEnd());
+    }
+
+    public function testSummarizeFallsBackToRecordExtentsWithoutSuppliedReportingPeriod(): void
+    {
+        $records = [
+            self::record(1, null, '2026-09-05 09:00:00', '2026-09-05 10:00:00', 3600, 60, '150.00', '150.00'),
+            self::record(2, null, '2026-09-20 09:00:00', '2026-09-20 10:00:00', 3600, 60, '150.00', '150.00'),
+        ];
+
+        $summary = $this->service->summarize($records);
+
+        self::assertSame('2026-09-05 09:00:00', $summary->getReportingPeriodStart()?->format('Y-m-d H:i:s'));
+        self::assertSame('2026-09-20 10:00:00', $summary->getReportingPeriodEnd()?->format('Y-m-d H:i:s'));
     }
 
     /**

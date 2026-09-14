@@ -17,11 +17,13 @@ use App\Entity\Project;
 use App\Entity\Timesheet;
 use App\Entity\User;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
+use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationCalculationResult;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarningReason;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
 use KimaiPlugin\ProRataTimeExportBundle\Service\DurationScaler;
 use KimaiPlugin\ProRataTimeExportBundle\Service\IntervalGenerator;
 use KimaiPlugin\ProRataTimeExportBundle\Service\RateResolver;
+use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use KimaiPlugin\ProRataTimeExportBundle\Service\UnusableEffectiveRateException;
 use PHPUnit\Framework\TestCase;
 
@@ -145,7 +147,10 @@ final class CompensationCalculatorTest extends TestCase
         $completed = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 10);
         $running = self::timesheet('2026-09-03 11:00:00', null, 0, 150.0, id: 11);
 
-        $records = $this->calculator->calculateAll([$completed, $running]);
+        $result = $this->calculator->calculateAll([$completed, $running]);
+        self::assertInstanceOf(CompensationCalculationResult::class, $result);
+
+        $records = $result->getRecords();
 
         self::assertCount(1, $records);
         self::assertSame(10, $records[0]->getSourceTimesheetId());
@@ -154,6 +159,30 @@ final class CompensationCalculatorTest extends TestCase
         self::assertCount(1, $warnings);
         self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $warnings[0]->reason);
         self::assertSame(11, $warnings[0]->sourceTimesheetId);
+
+        self::assertCount(1, $result->getWarnings());
+        self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $result->getWarnings()[0]->reason);
+        self::assertSame(11, $result->getWarnings()[0]->sourceTimesheetId);
+    }
+
+    public function testCalculateAllReturnsBatchWarningWhenEveryRecordIsRunning(): void
+    {
+        $runningA = self::timesheet('2026-09-03 09:00:00', null, 0, 150.0, id: 12);
+        $runningB = self::timesheet('2026-09-03 10:00:00', null, 0, 150.0, id: 13);
+
+        $result = $this->calculator->calculateAll([$runningA, $runningB]);
+
+        self::assertSame([], $result->getRecords());
+        self::assertCount(2, $result->getWarnings());
+        self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $result->getWarnings()[0]->reason);
+        self::assertSame(12, $result->getWarnings()[0]->sourceTimesheetId);
+        self::assertSame(13, $result->getWarnings()[1]->sourceTimesheetId);
+
+        $summary = (new ReconciliationService())->summarize($result);
+
+        self::assertSame([], $summary->getPerUserTotals());
+        self::assertCount(2, $summary->getWarnings());
+        self::assertSame(CompensationWarningReason::RUNNING_RECORD_EXCLUDED, $summary->getWarnings()[0]->reason);
     }
 
     public function testZeroDurationRecordIsPreservedWithAZeroLengthEquivalentIntervalAndWarning(): void
@@ -181,7 +210,7 @@ final class CompensationCalculatorTest extends TestCase
         $a = self::timesheet('2026-09-03 09:00:00', '2026-09-03 11:00:00', 2 * 3600, 150.0, id: 30);
         $b = self::timesheet('2026-09-03 10:00:00', '2026-09-03 12:00:00', 2 * 3600, 150.0, id: 31);
 
-        $records = $this->calculator->calculateAll([$a, $b]);
+        $records = $this->calculator->calculateAll([$a, $b])->getRecords();
 
         self::assertCount(2, $records);
         self::assertSame(120, $records[0]->getEquivalentDurationMinutes());
@@ -205,7 +234,7 @@ final class CompensationCalculatorTest extends TestCase
         $a = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 40);
         $b = self::timesheet('2026-09-03 10:00:00', '2026-09-03 11:00:00', 3600, 150.0, id: 41);
 
-        $records = $this->calculator->calculateAll([$a, $b]);
+        $records = $this->calculator->calculateAll([$a, $b])->getRecords();
 
         self::assertCount(0, $records[0]->getWarnings());
         self::assertCount(0, $records[1]->getWarnings());

@@ -43,7 +43,7 @@ use App\Entity\User;
  * CompensationEquivalentRecord::getBaseRate().
  *
  * "Generating user" (spec §61) is not resolvable from a records array alone;
- * ReconciliationService::summarize(array $records) has no request/session
+ * ReconciliationService::summarize() has no request/session
  * context. It is left null at this phase and is a later task's responsibility
  * to populate (from the export controller's authenticated user).
  */
