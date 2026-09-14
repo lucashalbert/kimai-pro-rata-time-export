@@ -57,7 +57,7 @@
     <dd>{{ summary.sourceRecordCount }}</dd>
 
     <dt>Actual Recorded Time</dt>
-    <dd>{{ (summary.actualTotalDurationSeconds // 3600) }}h {{ '%02d'|format((summary.actualTotalDurationSeconds % 3600) // 60) }}m</dd>
+    <dd>{{ (summary.actualTotalDurationSeconds // 3600) }}h {{ '%02d'|format((summary.actualTotalDurationSeconds % 3600) // 60) }}m{% if summary.actualTotalDurationSeconds % 60 != 0 %} {{ '%02d'|format(summary.actualTotalDurationSeconds % 60) }}s{% endif %}</dd>
 
     <dt>Compensation Equivalent Time</dt>
     <dd>{{ (summary.equivalentTotalDurationMinutes // 60) }}h {{ '%02d'|format(summary.equivalentTotalDurationMinutes % 60) }}m</dd>
@@ -96,7 +96,7 @@
     {% for userTotal in summary.perUserTotals %}
         <tr>
             <td>{{ userTotal.user ? userTotal.user.displayName : '(unknown)' }}</td>
-            <td class="actual-col">{{ (userTotal.actualDurationSeconds // 3600) }}:{{ '%02d'|format((userTotal.actualDurationSeconds % 3600) // 60) }}</td>
+            <td class="actual-col">{{ (userTotal.actualDurationSeconds // 3600) }}:{{ '%02d'|format((userTotal.actualDurationSeconds % 3600) // 60) }}{% if userTotal.actualDurationSeconds % 60 != 0 %}:{{ '%02d'|format(userTotal.actualDurationSeconds % 60) }}{% endif %}</td>
             <td class="actual-col">{{ userTotal.actualValue.format() }}</td>
             <td class="equivalent-col">{{ (userTotal.equivalentDurationMinutes // 60) }}:{{ '%02d'|format(userTotal.equivalentDurationMinutes % 60) }}</td>
             <td class="equivalent-col">{{ userTotal.equivalentValue.format() }}</td>
@@ -148,7 +148,7 @@
             <td>{{ record.activity ? record.activity.name : '' }}</td>
             <td class="actual-col">{{ record.actualStart.format('H:i') }}</td>
             <td class="actual-col">{{ record.actualEnd.format('H:i') }}</td>
-            <td class="actual-col">{{ (record.actualDurationSeconds // 3600) }}:{{ '%02d'|format((record.actualDurationSeconds % 3600) // 60) }}</td>
+            <td class="actual-col">{{ (record.actualDurationSeconds // 3600) }}:{{ '%02d'|format((record.actualDurationSeconds % 3600) // 60) }}{% if record.actualDurationSeconds % 60 != 0 %}:{{ '%02d'|format(record.actualDurationSeconds % 60) }}{% endif %}</td>
             <td class="actual-col">{{ '%.2f'|format(record.effectiveHourlyRate) }}</td>
             <td class="actual-col">{{ record.actualValue.format() }}</td>
             <td class="equivalent-col">{{ '%.2f'|format(record.baseRate) }}</td>

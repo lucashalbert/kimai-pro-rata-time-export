@@ -64,7 +64,7 @@ trait CompensationRowFormatter
             $record->getActivity()?->getName() ?? '',
             $record->getActualStart()->format('Y-m-d H:i'),
             $record->getActualEnd()->format('Y-m-d H:i'),
-            self::formatDurationMinutes(\intdiv($record->getActualDurationSeconds(), 60)),
+            self::formatDurationSeconds($record->getActualDurationSeconds()),
             self::formatRate($record->getEffectiveHourlyRate()),
             self::formatRate($record->getBaseRate()),
             self::formatFactor($record->getFactor()),
@@ -119,7 +119,7 @@ trait CompensationRowFormatter
             ['Reporting Period', self::formatPeriod($summary)],
             ['Users', (string) $summary->getUserCount()],
             ['Source Records', (string) $summary->getSourceRecordCount()],
-            ['Actual Recorded Time', self::formatDurationMinutes(\intdiv($summary->getActualTotalDurationSeconds(), 60))],
+            ['Actual Recorded Time', self::formatDurationSeconds($summary->getActualTotalDurationSeconds())],
             ['Actual Compensation Value', $summary->getActualCompensationValue()->format()],
             ['Compensation Equivalent Time', self::formatDurationMinutes($summary->getEquivalentTotalDurationMinutes())],
             ['Equivalent Compensation Value', $summary->getEquivalentCompensationValue()->format()],
@@ -136,7 +136,7 @@ trait CompensationRowFormatter
         foreach ($summary->getPerUserTotals() as $userTotal) {
             $rows[] = [
                 $userTotal->getUser()?->getDisplayName() ?? '(unknown)',
-                self::formatDurationMinutes(\intdiv($userTotal->getActualDurationSeconds(), 60)),
+                self::formatDurationSeconds($userTotal->getActualDurationSeconds()),
                 $userTotal->getActualValue()->format(),
                 self::formatDurationMinutes($userTotal->getEquivalentDurationMinutes()),
                 $userTotal->getEquivalentValue()->format(),
@@ -164,6 +164,19 @@ trait CompensationRowFormatter
     private static function formatDurationMinutes(int $totalMinutes): string
     {
         return \sprintf('%d:%02d', \intdiv($totalMinutes, 60), $totalMinutes % 60);
+    }
+
+    private static function formatDurationSeconds(int $totalSeconds): string
+    {
+        $hours = \intdiv($totalSeconds, 3600);
+        $minutes = \intdiv($totalSeconds % 3600, 60);
+        $seconds = $totalSeconds % 60;
+
+        if (0 === $seconds) {
+            return \sprintf('%d:%02d', $hours, $minutes);
+        }
+
+        return \sprintf('%d:%02d:%02d', $hours, $minutes, $seconds);
     }
 
     private static function formatRate(float $rate): string

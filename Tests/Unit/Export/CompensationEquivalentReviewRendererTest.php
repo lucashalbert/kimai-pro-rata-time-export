@@ -85,6 +85,18 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
         self::assertStringContainsString('#4', $html);
     }
 
+    public function testReviewPreservesSecondPrecisionActualDurations(): void
+    {
+        $renderer = self::grantedRenderer();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 09:01:30', 90, 60.0, id: 6);
+
+        $html = $renderer->render([$item], self::query())->getContent();
+
+        self::assertStringContainsString('0:01:30', $html);
+        self::assertStringContainsString('0h 01m 30s', $html);
+        self::assertStringContainsString('1.50', $html);
+    }
+
     public function testDoesNotMutateSourceTimesheets(): void
     {
         $renderer = self::grantedRenderer();

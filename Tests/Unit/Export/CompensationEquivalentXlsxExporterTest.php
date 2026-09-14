@@ -72,6 +72,19 @@ final class CompensationEquivalentXlsxExporterTest extends TestCase
         self::assertContains(['Rounding Variance', '0.00'], $sheets['Summary']);
     }
 
+    public function testWorkbookPreservesSecondPrecisionActualDurations(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 09:01:30', 90, 60.0, id: 4);
+
+        $response = $exporter->render([$item], self::query());
+        $sheets = self::readWorkbook($response->getFile()->getPathname());
+
+        self::assertSame('0:01:30', $sheets['Reconciliation'][3][8]);
+        self::assertSame('1.50', $sheets['Reconciliation'][3][15]);
+        self::assertContains(['Actual Recorded Time', '0:01:30'], $sheets['Summary']);
+    }
+
     public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
     {
         $exporter = self::grantedExporter();

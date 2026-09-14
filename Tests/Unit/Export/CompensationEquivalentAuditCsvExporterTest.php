@@ -76,6 +76,17 @@ final class CompensationEquivalentAuditCsvExporterTest extends TestCase
         ], $rows[1]);
     }
 
+    public function testAuditCsvPreservesSecondPrecisionActualDurations(): void
+    {
+        $exporter = self::grantedExporter();
+        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 09:01:30', 90, 60.0, id: 4);
+
+        $rows = self::csvRows($exporter->render([$item], self::query()));
+
+        self::assertSame('0:01:30', $rows[1][8]);
+        self::assertSame('1.50', $rows[1][15]);
+    }
+
     public function testRefusesToRenderWhenKimaiWouldMarkSourceRecordsExported(): void
     {
         $exporter = self::grantedExporter();

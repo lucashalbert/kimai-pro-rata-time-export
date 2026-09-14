@@ -25,11 +25,10 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
- * Spec §51: a single workbook with an "Employer Timecard" worksheet (the
- * spec §22 fields) and a "Reconciliation" worksheet (the spec §23 audit
- * fields), built directly on OpenSpout's multi-sheet XLSX writer — the same
- * library `App\Export\Base\XlsxRenderer` uses — rather than a new spreadsheet
- * dependency. Kimai's own `ColumnConverter`/`TemplateInterface` machinery
+ * Spec §51: a single workbook with "Employer Timecard", "Reconciliation" and
+ * "Summary" worksheets, built directly on OpenSpout's multi-sheet XLSX writer
+ * — the same library `App\Export\Base\XlsxRenderer` uses — rather than a new
+ * spreadsheet dependency. Kimai's own `ColumnConverter`/`TemplateInterface` machinery
  * (used by `XlsxRenderer`/`CsvRenderer`) assumes a user-configurable column
  * set resolved from entity getters; this export's columns are fixed
  * derived/computed values (equivalent start/end, factor, rounding
@@ -37,8 +36,7 @@ use Symfony\Component\HttpFoundation\Response;
  * machinery does not fit and is bypassed in favour of `AbstractSpreadsheetRenderer`'s
  * shared response-building only.
  *
- * Gated on the rate-viewing permission (spec §18, §31): the Reconciliation
- * sheet is rate-derived throughout.
+ * Gated on the rate-viewing permission (spec §18, §31).
  */
 final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRenderer implements RendererInterface, TimesheetExportInterface
 {
