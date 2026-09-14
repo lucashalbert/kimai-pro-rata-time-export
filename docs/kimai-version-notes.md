@@ -412,8 +412,9 @@ subscribes to `App\Event\ProjectMetaDefinitionEvent` /
 `CustomerMetaDefinitionEvent` (dispatched while Kimai builds that entity's
 edit form) and calls
 `$event->getEntity()->setMetaField((new ProjectMeta())->setName(...)->setType(NumberType::class)->addConstraint(new Assert\Positive())->...)`
-when the field isn't already present. This plugin registers those fields through
-`EventSubscriber\OverrideFieldDefinitionSubscriber`.
+on every definition event. `setMetaField()` merges by field name, preserving an
+existing value while reapplying non-persisted definition metadata. This plugin
+registers those fields through `EventSubscriber\OverrideFieldDefinitionSubscriber`.
 
 Sharp edge: `MetaTableTypeTrait`'s `type`/`label`/`required`/`constraints`/
 `options` properties carry no `#[ORM\Column]` — they are **not persisted**.

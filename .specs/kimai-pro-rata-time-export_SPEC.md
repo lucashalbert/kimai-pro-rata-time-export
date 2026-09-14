@@ -331,7 +331,7 @@ record through a four-level hierarchy, most specific wins:
 1. Project override   (most specific)
 2. Customer override
 3. User override
-4. Global default      (least specific — always available as the final fallback)
+4. Global default      (least specific configured fallback)
 ```
 
 For a given source record, the plugin resolves the record's project, the
@@ -996,14 +996,14 @@ If future requirements demand an explicit "processed" workflow, it must be imple
 Minimum configuration:
 
 ```yaml
-compensation_equivalent:
+pro_rata_time_export:
     base_rate: 150.00
 ```
 
 Future configuration SHOULD support:
 
 ```yaml
-compensation_equivalent:
+pro_rata_time_export:
     base_rate: 150.00
 
     rounding:
@@ -2059,16 +2059,10 @@ The first version MUST NOT attempt to:
 
 The architecture SHOULD permit future support for:
 
-### Multiple employer base rates
+### Additional employer base rate scopes
 
-Different teams/employees could have different base rates.
-
-### Per-user base rate
-
-```text
-Alice → $150
-Bob → $135
-```
+Future versions may add scopes beyond the current project/customer/user/global
+hierarchy, such as team-level defaults or activity-level overrides.
 
 ### Employer project mapping
 
