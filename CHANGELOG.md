@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Added the export/review surface: an HTML review renderer (`compensation-equivalent-review`) showing
+  actual and compensation-equivalent values side by side plus a summary and warnings; an
+  employer-facing CSV exporter (`compensation-equivalent-employer-csv`); an audit/reconciliation CSV
+  exporter (`compensation-equivalent-audit-csv`); and an XLSX exporter
+  (`compensation-equivalent-xlsx`) with "Employer Timecard", "Reconciliation", and "Summary"
+  worksheets. CSV exports include summary/reconciliation totals and warnings. All
+  compensation-equivalent renderers are gated on Kimai's own rate-viewing permission
+  (`view_rate_own_timesheet` / `view_rate_other_timesheet`).
 - Repository bootstrap; specification committed.
 - Recorded the Kimai 2.40.0 vs 2.65.0 API investigation in `docs/kimai-version-notes.md`;
   no breaking difference on any extension point the plugin uses.

@@ -1,0 +1,182 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Compensation Equivalent Timecard</title>
+    <style>
+        body { font-family: -apple-system, Arial, sans-serif; font-size: 13px; color: #1a1a1a; margin: 24px; }
+        h1 { font-size: 20px; margin-bottom: 4px; }
+        h2 { font-size: 15px; margin-top: 32px; }
+        .period { color: #555; margin-bottom: 16px; }
+        .warnings { background: #fff3cd; border: 1px solid #d9b451; padding: 12px 16px; margin-bottom: 20px; }
+        .warnings h2 { margin-top: 0; font-size: 14px; }
+        .warnings ul { margin: 4px 0 0; padding-left: 20px; }
+        table { border-collapse: collapse; width: 100%; margin-bottom: 24px; }
+        th, td { border: 1px solid #ccc; padding: 4px 8px; text-align: left; white-space: nowrap; }
+        thead th { background: #f0f0f0; }
+        .actual-col { background: #eaf2fb; }
+        .equivalent-col { background: #eafbea; }
+        th.actual-group { background: #cfe3f7; text-align: center; }
+        th.equivalent-group { background: #cfeecf; text-align: center; }
+        .summary-grid { display: grid; grid-template-columns: repeat(2, minmax(220px, 1fr)); gap: 4px 32px; max-width: 720px; margin-bottom: 20px; }
+        .summary-grid dt { font-weight: bold; }
+        .summary-grid dd { margin: 0 0 8px; }
+        .legend { margin-bottom: 8px; font-size: 12px; }
+        .legend span { display: inline-block; padding: 2px 8px; margin-right: 8px; border-radius: 3px; }
+        footer { margin-top: 32px; color: #777; font-size: 11px; }
+    </style>
+</head>
+<body>
+<h1>Compensation Equivalent Timecard</h1>
+<div class="period">
+    Reporting Period:
+    {% if summary.reportingPeriodStart and summary.reportingPeriodEnd %}
+        {{ summary.reportingPeriodStart.format('Y-m-d') }} &ndash; {{ summary.reportingPeriodEnd.format('Y-m-d') }}
+    {% else %}
+        (not specified)
+    {% endif %}
+</div>
+
+{% if summary.warnings|length > 0 %}
+    <div class="warnings">
+        <h2>Warnings</h2>
+        <ul>
+            {% for warning in summary.warnings %}
+                <li>{{ warning.message }}</li>
+            {% endfor %}
+        </ul>
+    </div>
+{% endif %}
+
+<h2>Summary</h2>
+<dl class="summary-grid">
+    <dt>Users</dt>
+    <dd>{{ summary.userCount }}</dd>
+
+    <dt>Source Records</dt>
+    <dd>{{ summary.sourceRecordCount }}</dd>
+
+    <dt>Actual Recorded Time</dt>
+    <dd>{{ (summary.actualTotalDurationSeconds // 3600) }}h {{ '%02d'|format((summary.actualTotalDurationSeconds % 3600) // 60) }}m{% if summary.actualTotalDurationSeconds % 60 != 0 %} {{ '%02d'|format(summary.actualTotalDurationSeconds % 60) }}s{% endif %}</dd>
+
+    <dt>Compensation Equivalent Time</dt>
+    <dd>{{ (summary.equivalentTotalDurationMinutes // 60) }}h {{ '%02d'|format(summary.equivalentTotalDurationMinutes % 60) }}m</dd>
+
+    <dt>Actual Compensation Value</dt>
+    <dd>{{ summary.actualCompensationValue.format() }}</dd>
+
+    <dt>Equivalent Compensation Value</dt>
+    <dd>{{ summary.equivalentCompensationValue.format() }}</dd>
+
+    <dt>Employer Base Rate</dt>
+    <dd>{% if summary.baseRate is not null %}{{ '%.2f'|format(summary.baseRate) }}/hr{% else %}(varies by record){% endif %}</dd>
+
+    <dt>Rounding Variance</dt>
+    <dd>{{ summary.roundingVariance.format() }}</dd>
+
+    <dt>Plugin / Calculation Version</dt>
+    <dd>{{ summary.pluginVersion }} / {{ summary.calculationVersion }}</dd>
+
+    <dt>Generated At</dt>
+    <dd>{{ summary.generatedAt.format('Y-m-d H:i') }}</dd>
+</dl>
+
+<h2>Per-User Totals</h2>
+<table>
+    <thead>
+    <tr>
+        <th>User</th>
+        <th class="actual-col">Actual</th>
+        <th class="actual-col">Actual Value</th>
+        <th class="equivalent-col">Equivalent</th>
+        <th class="equivalent-col">Equivalent Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for userTotal in summary.perUserTotals %}
+        <tr>
+            <td>{{ userTotal.user ? userTotal.user.displayName : '(unknown)' }}</td>
+            <td class="actual-col">{{ (userTotal.actualDurationSeconds // 3600) }}:{{ '%02d'|format((userTotal.actualDurationSeconds % 3600) // 60) }}{% if userTotal.actualDurationSeconds % 60 != 0 %}:{{ '%02d'|format(userTotal.actualDurationSeconds % 60) }}{% endif %}</td>
+            <td class="actual-col">{{ userTotal.actualValue.format() }}</td>
+            <td class="equivalent-col">{{ (userTotal.equivalentDurationMinutes // 60) }}:{{ '%02d'|format(userTotal.equivalentDurationMinutes % 60) }}</td>
+            <td class="equivalent-col">{{ userTotal.equivalentValue.format() }}</td>
+        </tr>
+    {% endfor %}
+    </tbody>
+</table>
+
+<h2>Detail</h2>
+<div class="legend">
+    <span class="actual-col">ACTUAL / RECORDED</span>
+    <span class="equivalent-col">COMPENSATION EQUIVALENT</span>
+    &mdash; equivalent times are a derived representation, not actual worked time.
+</div>
+<table>
+    <thead>
+    <tr>
+        <th rowspan="2">User</th>
+        <th rowspan="2">Date</th>
+        <th rowspan="2">Customer</th>
+        <th rowspan="2">Project</th>
+        <th rowspan="2">Activity</th>
+        <th class="actual-group" colspan="5">ACTUAL / RECORDED</th>
+        <th class="equivalent-group" colspan="6">COMPENSATION EQUIVALENT</th>
+        <th rowspan="2">Difference</th>
+        <th rowspan="2">Source ID</th>
+    </tr>
+    <tr>
+        <th class="actual-col">Start</th>
+        <th class="actual-col">End</th>
+        <th class="actual-col">Duration</th>
+        <th class="actual-col">Effective Rate</th>
+        <th class="actual-col">Actual Value</th>
+        <th class="equivalent-col">Base Rate</th>
+        <th class="equivalent-col">Factor</th>
+        <th class="equivalent-col">Start</th>
+        <th class="equivalent-col">End</th>
+        <th class="equivalent-col">Duration</th>
+        <th class="equivalent-col">Value</th>
+    </tr>
+    </thead>
+    <tbody>
+    {% for record in records %}
+        <tr>
+            <td>{{ record.user ? record.user.displayName : '' }}</td>
+            <td>{{ record.date.format('Y-m-d') }}</td>
+            <td>{{ record.customer ? record.customer.name : '' }}</td>
+            <td>{{ record.project ? record.project.name : '' }}</td>
+            <td>{{ record.activity ? record.activity.name : '' }}</td>
+            <td class="actual-col">{{ record.actualStart.format('H:i') }}</td>
+            <td class="actual-col">{% if record.actualStart.format('Y-m-d') != record.actualEnd.format('Y-m-d') %}{{ record.actualEnd.format('Y-m-d H:i') }}{% else %}{{ record.actualEnd.format('H:i') }}{% endif %}</td>
+            <td class="actual-col">{{ (record.actualDurationSeconds // 3600) }}:{{ '%02d'|format((record.actualDurationSeconds % 3600) // 60) }}{% if record.actualDurationSeconds % 60 != 0 %}:{{ '%02d'|format(record.actualDurationSeconds % 60) }}{% endif %}</td>
+            <td class="actual-col">{{ '%.2f'|format(record.effectiveHourlyRate) }}</td>
+            <td class="actual-col">{{ record.actualValue.format() }}</td>
+            <td class="equivalent-col">{{ '%.2f'|format(record.baseRate) }}</td>
+            <td class="equivalent-col">{{ '%.6f'|format(record.factor) }}</td>
+            <td class="equivalent-col">{{ record.equivalentStart.format('H:i') }}</td>
+            <td class="equivalent-col">{% if record.equivalentStart.format('Y-m-d') != record.equivalentEnd.format('Y-m-d') %}{{ record.equivalentEnd.format('Y-m-d H:i') }}{% else %}{{ record.equivalentEnd.format('H:i') }}{% endif %}</td>
+            <td class="equivalent-col">{{ (record.equivalentDurationMinutes // 60) }}:{{ '%02d'|format(record.equivalentDurationMinutes % 60) }}</td>
+            <td class="equivalent-col">{{ record.equivalentValue.format() }}</td>
+            <td>{{ record.roundingDifference.format() }}</td>
+            <td>{{ record.sourceTimesheetId }}</td>
+        </tr>
+        {% if record.warnings|length > 0 %}
+            <tr>
+                <td colspan="18" style="background:#fff3cd;">
+                    {% for warning in record.warnings %}
+                        &#9888; {{ warning.message }}{% if not loop.last %}<br>{% endif %}
+                    {% endfor %}
+                </td>
+            </tr>
+        {% endif %}
+    {% endfor %}
+    </tbody>
+</table>
+
+<footer>
+    Actual/Recorded values are unmodified Kimai timesheet records. Compensation Equivalent values are a
+    derived representation of that work at the configured employer base rate. Source Kimai timesheets are
+    not modified by generating this report.
+</footer>
+</body>
+</html>

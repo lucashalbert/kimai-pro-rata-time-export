@@ -24,3 +24,8 @@ services:
 
     KimaiPlugin\ProRataTimeExportBundle\Service\:
         resource: '../../Service/'
+
+    # autoconfigure tags each exporter implementing App\Export\RendererInterface
+    # and/or App\Export\TimesheetExportInterface (see docs/kimai-version-notes.md §4).
+    KimaiPlugin\ProRataTimeExportBundle\Export\:
+        resource: '../../Export/'
