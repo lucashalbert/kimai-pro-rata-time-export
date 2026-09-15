@@ -2,7 +2,7 @@
 
 A Kimai plugin that generates a compensation-equivalent timecard from Kimai's recorded timesheet data. The purpose of the plugin is to support users who perform work for multiple projects that have different hourly compensation rates but must submit a single employer timecard using a single nominal/base hourly rate. The plugin transparently converts each actual timesheet duration into an equivalent duration at a configurable employer base rate, while preserving the immutability of Kimai's original records.
 
-**Status:** Partial implementation. The bundle registers, configuration and override-field definitions are wired, and the core compensation domain services are implemented: rate resolution, duration scaling, interval generation, exact-money arithmetic, compensation calculation, and reconciliation summaries. Exporters and UI are not implemented yet. See `.specs/kimai-pro-rata-time-export_SPEC.md` for the complete technical specification.
+**Status:** Feature-complete for v1. The bundle registers, configuration and override-field definitions are wired, the core compensation domain services are implemented (rate resolution, duration scaling, interval generation, exact-money arithmetic, compensation calculation, and reconciliation summaries), and the export surface — an HTML review/summary screen, an employer-facing CSV, an audit/reconciliation CSV, and an XLSX workbook — is available from Kimai's Export screen. See `.specs/kimai-pro-rata-time-export_SPEC.md` for the complete technical specification.
 
 ## Immutability Guarantee
 
@@ -50,7 +50,18 @@ silently wrong timecard.
 
 ## Usage
 
-Coming in a later change.
+From Kimai's **Time Tracking → Export** screen, filter to the reporting period (and users/projects) you want, then choose one of:
+
+- **Compensation Equivalent (Review)** — an HTML page showing every source record with both its actual/recorded values and its compensation-equivalent values side by side, plus a summary (reporting period, actual vs. equivalent totals, rounding variance, per-user totals) and any warnings (excluded running records, overlapping source records, duration/timestamp disagreements). Review this before downloading a file.
+- **Compensation Equivalent Timecard (CSV)** — the minimal employer-facing file: Date, User, Project, Start, End, using the compensation-equivalent start/end times. Also available from the Timesheet list's export dropdown.
+- **Compensation Equivalent Reconciliation (Audit CSV)** — the full audit trail behind the employer-facing timecard: source timesheet ID, effective rate, employer base rate, conversion factor, actual and equivalent start/end/duration, and actual/equivalent/rounding-difference compensation values.
+- **Compensation Equivalent Timecard (XLSX)** — one workbook with an "Employer Timecard" worksheet (the CSV's fields) and a "Reconciliation" worksheet (the audit CSV's fields).
+
+Generating any of these never marks the underlying Kimai timesheets as exported and never changes them — see Immutability Guarantee above.
+
+### Permissions
+
+The review screen, the audit CSV, and the XLSX workbook all disclose rates and compensation values, so they require the same permission Kimai itself uses to gate rate visibility elsewhere: `view_rate_own_timesheet` when the export is scoped to a single user, `view_rate_other_timesheet` otherwise. A user without that permission is denied outright rather than shown a redacted view. The employer-facing CSV carries no rate data and is not gated.
 
 ## Development environment
 

@@ -56,15 +56,49 @@ registration, export extension points), and why each was chosen:
   construct from an offset-free string (`'2026-03-08 01:30:00'`) plus the `DateTimeZone`.
   See `Service/IntervalGenerator.php` and its test for the working pattern.
 - `composer.json` has no `require-dev` yet (no PHPUnit/PHPStan/CS fixer wired up), and CI
-  (`.github/workflows/ci.yml`) only runs `composer validate`. Until a shared dev-dependency
-  set lands, run PHPUnit against a given test file via a disposable container: `composer
-  require-dev`-only scratch project (outside the repo) installed with `docker run --rm -v
-  <scratch>:/app -w /app composer:2 install`, plus a bootstrap script that
-  `spl_autoload_register`s the `KimaiPlugin\ProRataTimeExportBundle\` prefix onto the repo
-  root, run under `docker run ... php:8.2-cli php vendor/bin/phpunit --bootstrap
-  bootstrap.php <path-to-test>`. Don't add `require-dev` to the plugin's own
-  `composer.json` for a single service's tests — that's shared-file churn several workers
-  would collide on; it belongs in the task that wires up CI test execution for real.
+  (`.github/workflows/ci.yml`) only runs `composer validate`. The simplest way to run the
+  suite: bring up `docker-compose.yml`'s Kimai container (on a non-default `KIMAI_PORT` if
+  another worktree already holds 8001 — check with `docker ps`), then inside it
+  `composer install` (Kimai's own `composer.json` already declares `phpunit/phpunit`,
+  `symfony/phpunit-bridge`, etc. as `require-dev`; the prod image just ships without them).
+  No bootstrap file is needed: Kimai's own `composer.json` autoload maps both `App\` → `src/`
+  and `KimaiPlugin\` → `var/plugins/` (where this repo is mounted), so `vendor/autoload.php`
+  already covers this plugin's namespace. Run with
+  `docker compose exec -w /opt/kimai kimai vendor/bin/phpunit --bootstrap vendor/autoload.php
+  var/plugins/ProRataTimeExportBundle/Tests/`. Don't add `require-dev` to the plugin's own
+  `composer.json` for this — that's shared-file churn several workers would collide on; it
+  belongs in the task that wires up CI test execution for real. Prefer reading Kimai source
+  from an *already-running* container of a peer worktree (`docker ps` for another
+  `*-kimai-1`) over starting your own when you only need to `cat` files — it's the same
+  image and read-only inspection doesn't affect the other task.
+- Kimai's `App\Export\ColumnConverter`/`TemplateInterface`/`AbstractSpreadsheetRenderer::writeSpreadsheet()`
+  machinery (used by the built-in CSV/XLSX/HTML renderers) assumes a user-configurable column
+  set resolved via entity getters (`Column::getValue($exportItem)`). It does not fit an
+  exporter whose fields are computed/derived values with no corresponding getter (equivalent
+  start/end, conversion factor, rounding difference, ...) — bypass it and use OpenSpout's
+  writers directly (same library Kimai's own renderers use), reusing only
+  `AbstractSpreadsheetRenderer::getFileResponse()` for the download response. See `Export/`.
+- OpenSpout's `CSV\Writer` adds a UTF-8 BOM by default; Kimai's own `CsvRenderer` explicitly
+  sets `(new CSV\Options())->SHOULD_ADD_BOM = false`, and any plugin CSV exporter should do
+  the same or `str_getcsv`/other consumers choke on the leading BOM byte before a quoted
+  first field. OpenSpout's XLSX writer additionally *drops* any row consisting only of
+  empty-string cells when the file is read back — a literal blank "spacer" row silently
+  disappears and shifts every later row index by one. Use a single-space cell (`' '`) instead
+  of `''` for an intentionally blank row.
+- A plugin's `Resources/views/` directory is auto-registered as a Twig namespace by
+  `Symfony\Bundle\TwigBundle\DependencyInjection\TwigExtension::getBundleTemplatePaths()`,
+  named after the bundle class with its `Bundle` suffix stripped — `ProRataTimeExportBundle`
+  → `@ProRataTimeExport`. No plugin-side registration code needed; confirmed via
+  `bin/console debug:twig` inside a booted container. A plugin's own HTML export view should
+  be a self-contained document (own `<style>`), not `{% extends %}` Kimai's
+  `export/layout.html.twig` — that app-level template pulls in front-end macros/asset loaders
+  meant for Kimai's own configurable export templates.
+- Views/exports that disclose rates or compensation values should gate on the same
+  permission Kimai's own export code uses for that
+  (`App\Export\ColumnConverter::isRenderRate()`): `view_rate_own_timesheet` when the export
+  is scoped to a single user, `view_rate_other_timesheet` otherwise, via the
+  `Symfony\Bundle\SecurityBundle\Security` service's `isGranted()`/`getUser()`. Don't invent a
+  new permission for this.
 
 ## Commands
 
