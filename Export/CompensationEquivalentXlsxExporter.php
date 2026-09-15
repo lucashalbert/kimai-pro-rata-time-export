@@ -18,6 +18,7 @@ use App\Export\RendererInterface;
 use App\Export\TimesheetExportInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
 use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use OpenSpout\Common\Entity\Row;
 use OpenSpout\Writer\XLSX\Writer;
@@ -43,6 +44,7 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
     use CompensationRowFormatter;
     use ChecksRatePermission;
     use ChecksMarkAsExported;
+    use RendersCompensationUnavailable;
 
     private const NOTE = 'Actual values represent source Kimai records. Equivalent values represent '
         . 'compensation-equivalent time at the configured employer base rate. Source Kimai timesheets '
@@ -78,7 +80,11 @@ final class CompensationEquivalentXlsxExporter extends AbstractSpreadsheetRender
         $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
-        $result = $this->calculator->calculateAll($exportItems);
+        try {
+            $result = $this->calculator->calculateAll($exportItems);
+        } catch (CompensationUnavailableException $exception) {
+            return self::compensationUnavailableResponse($exception);
+        }
         $records = $result->getRecords();
         $summary = $this->reconciliationService->summarize($result, $query->getBegin(), $query->getEnd());
 

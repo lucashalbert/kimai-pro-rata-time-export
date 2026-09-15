@@ -33,7 +33,7 @@ use KimaiPlugin\ProRataTimeExportBundle\Service\RateResolver;
  */
 trait ExportTestFixtures
 {
-    private static function calculator(float $globalBaseRate = 150.0): CompensationCalculator
+    private static function calculator(?float $globalBaseRate = 150.0): CompensationCalculator
     {
         return new CompensationCalculator(
             new RateResolver(),
@@ -43,7 +43,7 @@ trait ExportTestFixtures
         );
     }
 
-    private static function configuration(float $globalBaseRate): CompensationConfiguration
+    private static function configuration(?float $globalBaseRate): CompensationConfiguration
     {
         $loader = new class implements ConfigLoaderInterface {
             public function getConfigurations(): array
@@ -52,10 +52,10 @@ trait ExportTestFixtures
             }
         };
 
-        return new CompensationConfiguration(new SystemConfiguration(
-            $loader,
-            ['pro_rata_time_export.base_rate' => $globalBaseRate]
-        ));
+        // null leaves the global base rate unset, like a fresh install.
+        $settings = null === $globalBaseRate ? [] : ['pro_rata_time_export.base_rate' => $globalBaseRate];
+
+        return new CompensationConfiguration(new SystemConfiguration($loader, $settings));
     }
 
     private static function user(string $identifier): User

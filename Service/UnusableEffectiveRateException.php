@@ -19,7 +19,7 @@ use App\Entity\ExportableItem;
  * Spec §6/§32: the export fails with this message rather than assuming a rate
  * or falling back to the current project rate.
  */
-final class UnusableEffectiveRateException extends \RuntimeException
+final class UnusableEffectiveRateException extends CompensationUnavailableException
 {
     public static function missing(ExportableItem $item): self
     {

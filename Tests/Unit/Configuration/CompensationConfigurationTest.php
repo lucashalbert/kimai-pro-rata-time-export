@@ -23,6 +23,7 @@ use App\Entity\UserPreference;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
 use PHPUnit\Framework\Attributes\DataProvider;
 use PHPUnit\Framework\TestCase;
+use Symfony\Component\Form\Extension\Core\Type\NumberType;
 
 /**
  * Runs against Kimai's real entities (no database), same bootstrap as
@@ -116,6 +117,21 @@ final class CompensationConfigurationTest extends TestCase
 
         self::assertSame(150.0, $config->getBaseRate($record));
         self::assertTrue($config->hasBaseRate($record));
+    }
+
+    public function testUnsetUserPreferenceTypedByItsDefinitionIsNotConfigured(): void
+    {
+        // Kimai's UserPreference::getValue() casts null to 0.0 once the
+        // definition subscriber has typed it NumberType in the same request,
+        // which is the case during an export.
+        $user = new User();
+        $user->setUserIdentifier('alice');
+        $user->addPreference((new UserPreference(CompensationConfiguration::OVERRIDE_FIELD_NAME, null))->setType(NumberType::class));
+        $record = self::record(self::projectWithOverride(null), $user);
+
+        $this->expectExceptionMessage('Employer base rate is not configured.');
+
+        self::configuration(null)->getBaseRate($record);
     }
 
     public function testUserOverrideBeatsGlobalValue(): void

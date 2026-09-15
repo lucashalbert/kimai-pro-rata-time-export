@@ -434,8 +434,12 @@ mechanism: `App\Entity\UserPreference` (own table
 `kimai2_user_preferences`, own admin surface — the user profile/preferences
 screen — registered the same way via a definition event), read through
 `User::getPreferenceValue(string $name, mixed $default = null, bool $allowNull = true): bool|int|float|string|null`.
-Same non-persisted-`type` caveat as meta fields: read it as a raw scalar and
-validate/cast in the plugin, don't rely on `NumberType` coercion.
+Same non-persisted-`type` caveat as meta fields, with one difference: unlike
+`MetaTableTypeTrait::getValue()`, `UserPreference::getValue()` casts even `null`,
+so when the definition subscriber has typed it `NumberType` in the same request
+(it has, during an export) an unset preference reads as `0.0`. The plugin
+therefore reads an untyped clone (`CompensationConfiguration::rawPreferenceValue()`)
+and validates/casts itself. Identical in 2.40.0 and 2.65.0.
 
 This asymmetry (two entities via meta fields, one via user preferences) was
 escalated to and confirmed by the captain rather than assumed — see the
@@ -450,6 +454,18 @@ edit forms. `CompensationConfiguration::getBaseRate(ExportableItem $item)`
 reads those values, most specific first:
 `$item->getProject()?->getMetaField(...)`,
 `$item->getProject()?->getCustomer()?->getMetaField(...)`,
-`$item->getUser()?->getPreferenceValue(...)`, then the existing global
+`$item->getUser()?->getPreference(...)` (read untyped, see above), then the existing global
 `pro_rata_time_export.base_rate` config value. No new Kimai API beyond what's
 listed above; identical across 2.40.0–2.65.0.
+
+## Export errors
+
+`App\Controller\ExportController::export()` calls `$renderer->render()` with no
+`try`/`catch` in both 2.40.0 and 2.65.0, so any exception a renderer throws
+becomes Kimai's generic 500 page. The export form submits into a new tab, so a
+flash message + redirect has nowhere useful to land. The plugin's renderers
+instead catch `Service\CompensationUnavailableException` (missing/unusable
+effective or base rate, spec §32) and return a 422 page carrying its message
+(`Export\RendersCompensationUnavailable`). Guards that must abort the request
+(the mark-as-exported check) still throw: returning a Response would let the
+controller go on to mark the records exported.

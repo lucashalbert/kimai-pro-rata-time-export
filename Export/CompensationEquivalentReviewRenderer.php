@@ -15,6 +15,7 @@ use App\Entity\ExportableItem;
 use App\Export\RendererInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
 use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
@@ -38,6 +39,7 @@ final class CompensationEquivalentReviewRenderer implements RendererInterface
 {
     use ChecksRatePermission;
     use ChecksMarkAsExported;
+    use RendersCompensationUnavailable;
 
     public function __construct(
         private readonly CompensationCalculator $calculator,
@@ -65,7 +67,11 @@ final class CompensationEquivalentReviewRenderer implements RendererInterface
         $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
-        $result = $this->calculator->calculateAll($exportItems);
+        try {
+            $result = $this->calculator->calculateAll($exportItems);
+        } catch (CompensationUnavailableException $exception) {
+            return self::compensationUnavailableResponse($exception);
+        }
         // The query's own selected date range is authoritative for the
         // reporting period when present; only an unfiltered query falls back
         // to the records' own extents (see ReconciliationService::summarize()).

@@ -50,8 +50,8 @@ final class CompensationCalculator
      * is the gatekeeper that excludes running records before they ever reach
      * here (spec §15).
      *
-     * @throws \RuntimeException on a missing or invalid effective rate (spec §6, §32),
-     *                            or a missing/invalid employer base rate (spec §7, §32)
+     * @throws CompensationUnavailableException on a missing or invalid effective rate (spec §6, §32),
+     *                                          or a missing/invalid employer base rate (spec §7, §32)
      * @throws \LogicException    if called directly with a running record
      */
     public function calculate(ExportableItem $item): CompensationEquivalentRecord
