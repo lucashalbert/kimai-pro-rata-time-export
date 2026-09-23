@@ -140,11 +140,8 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
     }
 
     /**
-     * A real Twig environment pointed directly at the plugin's Resources/views
-     * directory, mirroring how Symfony's TwigBundle registers a bundle's
-     * views under the `@<BundleNameWithoutBundleSuffix>` namespace (see
-     * docs/kimai-version-notes.md and vendor/symfony/twig-bundle's
-     * TwigExtension::getBundleTemplatePaths()), without booting the kernel.
+     * Mirrors TwigBundle's `@<BundleNameWithoutBundleSuffix>` namespace
+     * registration (TwigExtension::getBundleTemplatePaths()) without booting the kernel.
      */
     private static function twig(): Environment
     {

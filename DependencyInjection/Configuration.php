@@ -37,7 +37,6 @@ final class Configuration implements ConfigurationInterface
         $rootNode
             ->addDefaultsIfNotSet()
             ->children()
-                // The employer base rate at which equivalent time is expressed.
                 // Spec §7 requires base_rate > 0; enforced at read time by
                 // CompensationConfiguration so a misconfigured instance fails
                 // with the spec §32 message rather than at container compile time.

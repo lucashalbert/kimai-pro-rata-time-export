@@ -22,13 +22,10 @@ use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
  * The compensation domain entry point (spec §67): composes RateResolver,
  * DurationScaler and IntervalGenerator into derived records.
  *
- * Strictly read-only (spec §3.1). It reads the ExportableItem instances Kimai's
- * export pipeline hands to a renderer and never writes to, re-queries or flushes
- * a Timesheet. Deterministic (spec §3.3): no randomness, no dependency on the
- * current time, no order-dependent state.
- *
- * Each source record produces exactly one derived record; records are never
- * merged and overlaps are never resolved (spec §12, §13).
+ * Strictly read-only (spec §3.1): never writes to, re-queries or flushes a
+ * Timesheet. Deterministic (spec §3.3): no dependency on the current time.
+ * One derived record per source record; never merged, overlaps never resolved
+ * (spec §12, §13).
  */
 final class CompensationCalculator
 {
@@ -44,11 +41,7 @@ final class CompensationCalculator
     }
 
     /**
-     * Derive one compensation-equivalent record from one source record.
-     *
-     * Assumes $item is a completed record (getEnd() !== null); calculateAll()
-     * is the gatekeeper that excludes running records before they ever reach
-     * here (spec §15).
+     * Assumes a completed record; calculateAll() excludes running ones (spec §15).
      *
      * @throws CompensationUnavailableException on a missing or invalid effective rate (spec §6, §32),
      *                                          or a missing/invalid employer base rate (spec §7, §32)
@@ -119,15 +112,9 @@ final class CompensationCalculator
     }
 
     /**
-     * Derive records for a whole filtered result set.
-     *
-     * Running records are excluded with a warning rather than converted
-     * (spec §15); zero-duration records are preserved with a zero-length
-     * equivalent interval (spec §14). Warnings are collected on the returned
-     * records/summary rather than being logged and dropped (spec §32, §33).
-     *
-     * Running-record warnings are returned at batch level because the excluded
-     * record itself never produces a CompensationEquivalentRecord to carry one.
+     * Running records are excluded with a warning (spec §15); zero-duration
+     * records are preserved with a zero-length interval (spec §14). Running-record
+     * warnings are batch-level because no derived record exists to carry them.
      *
      * @param ExportableItem[] $items the array Kimai's export pipeline provides,
      *                                already filtered and permission-scoped (spec §18, §31)
