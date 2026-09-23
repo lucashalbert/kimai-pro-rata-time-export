@@ -429,7 +429,7 @@ Sharp edge: `MetaTableTypeTrait`'s `type`/`label`/`required`/`constraints`/
 Only `name`, `value` and `visible` come back from Doctrine. So
 `getMetaField()->getValue()` outside of a request that also ran the
 definition-event subscriber returns the **raw string** Doctrine loaded (not
-cast by `NumberType`, since `type` is `null` on that freshly-hydrated
+transformed by the field type, since `type` is `null` on that freshly-hydrated
 object) — `CompensationConfiguration` therefore parses/validates the value
 itself (`is_numeric()` + cast) rather than trusting a typed return.
 
