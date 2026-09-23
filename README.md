@@ -80,6 +80,8 @@ the plugin's money value object and displayed at normal currency precision.
 
 ## Usage
 
+For a screenshot walkthrough of setup, rates and exports, see the [usage guide](docs/usage-guide.md).
+
 From Kimai's **Time Tracking → Export** screen, filter to the reporting period (and users/projects) you want, then choose one of:
 
 - **Compensation Equivalent (Review)** — an HTML page showing every source record with both its actual/recorded values and its compensation-equivalent values side by side, plus a summary (reporting period, actual vs. equivalent totals, rounding variance, per-user totals) and any warnings (excluded running records, overlapping source records, duration/timestamp disagreements). Review this before downloading a file.
