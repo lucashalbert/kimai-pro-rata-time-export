@@ -27,6 +27,15 @@ final class CompensationEquivalentReviewRendererTest extends TestCase
 {
     use ExportTestFixtures;
 
+    public function testRegistersAsAnHtmlExportRendererWithAHumanReadableTitle(): void
+    {
+        $renderer = self::grantedRenderer();
+
+        self::assertSame('compensation-equivalent-review', $renderer->getId());
+        self::assertSame('Compensation Equivalent (Review)', $renderer->getTitle());
+        self::assertSame('html', $renderer->getType());
+    }
+
     public function testDeniesAccessWithoutTheRateViewingPermission(): void
     {
         $renderer = new CompensationEquivalentReviewRenderer(
