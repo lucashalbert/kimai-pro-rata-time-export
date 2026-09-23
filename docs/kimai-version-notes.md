@@ -411,17 +411,25 @@ property spec §7 relies on — is a separate step from reading it: a plugin
 subscribes to `App\Event\ProjectMetaDefinitionEvent` /
 `CustomerMetaDefinitionEvent` (dispatched while Kimai builds that entity's
 edit form) and calls
-`$event->getEntity()->setMetaField((new ProjectMeta())->setName(...)->setType(NumberType::class)->addConstraint(new Assert\Positive())->...)`
+`$event->getEntity()->setMetaField((new ProjectMeta())->setName(...)->setType(MoneyType::class)->addConstraint(new Assert\Positive())->...)`
 on every definition event. `setMetaField()` merges by field name, preserving an
 existing value while reapplying non-persisted definition metadata. This plugin
 registers those fields through `EventSubscriber\OverrideFieldDefinitionSubscriber`.
+They use Symfony's `MoneyType` — the parent of Kimai's own `HourlyRateType`/
+`InternalRateType` — with a `currency` option taken from the same source
+Kimai's rate fields use: the customer's currency for project/customer, and
+`SystemConfiguration::getUserDefaultCurrency()` for the user preference (in
+2.65.0 that is a deprecated alias of the customer default; Kimai's own user
+hourly-rate field follows the same change). `MetaTableTypeTrait::getValue()`
+only casts `NumberType`, so a `MoneyType` value always comes back as the raw
+string — `CompensationConfiguration` already parses it itself.
 
 Sharp edge: `MetaTableTypeTrait`'s `type`/`label`/`required`/`constraints`/
 `options` properties carry no `#[ORM\Column]` — they are **not persisted**.
 Only `name`, `value` and `visible` come back from Doctrine. So
 `getMetaField()->getValue()` outside of a request that also ran the
 definition-event subscriber returns the **raw string** Doctrine loaded (not
-cast by `NumberType`, since `type` is `null` on that freshly-hydrated
+transformed by the field type, since `type` is `null` on that freshly-hydrated
 object) — `CompensationConfiguration` therefore parses/validates the value
 itself (`is_numeric()` + cast) rather than trusting a typed return.
 

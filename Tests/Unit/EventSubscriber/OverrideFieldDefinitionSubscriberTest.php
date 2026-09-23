@@ -17,13 +17,15 @@ use App\Entity\Project;
 use App\Entity\ProjectMeta;
 use App\Entity\User;
 use App\Entity\UserPreference;
+use App\Configuration\ConfigLoaderInterface;
+use App\Configuration\SystemConfiguration;
 use App\Event\CustomerMetaDefinitionEvent;
 use App\Event\ProjectMetaDefinitionEvent;
 use App\Event\UserPreferenceEvent;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
 use KimaiPlugin\ProRataTimeExportBundle\EventSubscriber\OverrideFieldDefinitionSubscriber;
 use PHPUnit\Framework\TestCase;
-use Symfony\Component\Form\Extension\Core\Type\NumberType;
+use Symfony\Component\Form\Extension\Core\Type\MoneyType;
 use Symfony\Component\Validator\Constraints\Positive;
 
 final class OverrideFieldDefinitionSubscriberTest extends TestCase
@@ -32,7 +34,12 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
 
     protected function setUp(): void
     {
-        $this->subscriber = new OverrideFieldDefinitionSubscriber();
+        $loader = $this->createStub(ConfigLoaderInterface::class);
+        $loader->method('getConfigurations')->willReturn([]);
+        $this->subscriber = new OverrideFieldDefinitionSubscriber(new SystemConfiguration($loader, [
+            'defaults.customer.currency' => 'EUR',
+            'defaults.user.currency' => 'EUR',
+        ]));
     }
 
     public function testDefinesProjectOverrideField(): void
@@ -43,14 +50,17 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
 
         $field = $project->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
         self::assertInstanceOf(ProjectMeta::class, $field);
-        self::assertSame(NumberType::class, $field->getType());
-        self::assertSame(['required' => false], $field->getOptions());
+        self::assertSame(MoneyType::class, $field->getType());
+        self::assertSame(['required' => false, 'currency' => 'EUR'], $field->getOptions());
         self::assertHasPositiveConstraint($field->getConstraints());
     }
 
     public function testProjectOverrideFieldIsNotDuplicatedAndKeepsExistingValue(): void
     {
+        $customer = new Customer('Customer A');
+        $customer->setCurrency('CHF');
         $project = (new Project())->setName('Project A');
+        $project->setCustomer($customer);
         $existing = (new ProjectMeta())
             ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
             ->setValue('155.25');
@@ -60,9 +70,9 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
 
         $field = $project->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
         self::assertSame($existing, $field);
-        self::assertSame(155.25, $field->getValue());
-        self::assertSame(NumberType::class, $field->getType());
-        self::assertSame(['required' => false], $field->getOptions());
+        self::assertSame('155.25', $field->getValue());
+        self::assertSame(MoneyType::class, $field->getType());
+        self::assertSame(['required' => false, 'currency' => 'CHF'], $field->getOptions());
         self::assertHasPositiveConstraint($field->getConstraints());
         self::assertCount(1, $project->getMetaFields());
     }
@@ -70,19 +80,21 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
     public function testDefinesCustomerOverrideField(): void
     {
         $customer = new Customer('Customer A');
+        $customer->setCurrency('USD');
 
         $this->subscriber->defineCustomerOverride(new CustomerMetaDefinitionEvent($customer));
 
         $field = $customer->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
         self::assertInstanceOf(CustomerMeta::class, $field);
-        self::assertSame(NumberType::class, $field->getType());
-        self::assertSame(['required' => false], $field->getOptions());
+        self::assertSame(MoneyType::class, $field->getType());
+        self::assertSame(['required' => false, 'currency' => 'USD'], $field->getOptions());
         self::assertHasPositiveConstraint($field->getConstraints());
     }
 
     public function testCustomerOverrideFieldIsNotDuplicatedAndKeepsExistingValue(): void
     {
         $customer = new Customer('Customer A');
+        $customer->setCurrency('USD');
         $existing = (new CustomerMeta())
             ->setName(CompensationConfiguration::OVERRIDE_FIELD_NAME)
             ->setValue('145.75');
@@ -92,9 +104,9 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
 
         $field = $customer->getMetaField(CompensationConfiguration::OVERRIDE_FIELD_NAME);
         self::assertSame($existing, $field);
-        self::assertSame(145.75, $field->getValue());
-        self::assertSame(NumberType::class, $field->getType());
-        self::assertSame(['required' => false], $field->getOptions());
+        self::assertSame('145.75', $field->getValue());
+        self::assertSame(MoneyType::class, $field->getType());
+        self::assertSame(['required' => false, 'currency' => 'USD'], $field->getOptions());
         self::assertHasPositiveConstraint($field->getConstraints());
         self::assertCount(1, $customer->getMetaFields());
     }
@@ -107,8 +119,8 @@ final class OverrideFieldDefinitionSubscriberTest extends TestCase
 
         $preference = self::findPreference($event);
         self::assertInstanceOf(UserPreference::class, $preference);
-        self::assertSame(NumberType::class, $preference->getType());
-        self::assertSame(['label' => 'Employer Base Rate', 'required' => false], $preference->getOptions());
+        self::assertSame(MoneyType::class, $preference->getType());
+        self::assertSame(['label' => 'Employer Base Rate', 'required' => false, 'currency' => 'EUR'], $preference->getOptions());
         self::assertHasPositiveConstraint($preference->getConstraints());
     }
 
