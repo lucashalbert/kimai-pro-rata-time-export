@@ -18,6 +18,7 @@ use App\Export\RendererInterface;
 use App\Export\TimesheetExportInterface;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
 use KimaiPlugin\ProRataTimeExportBundle\Service\ReconciliationService;
 use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\HttpFoundation\Response;
@@ -36,6 +37,7 @@ final class CompensationEquivalentEmployerCsvExporter extends AbstractSpreadshee
     use WritesCsvFile;
     use ChecksRatePermission;
     use ChecksMarkAsExported;
+    use RendersCompensationUnavailable;
 
     public function __construct(
         private readonly CompensationCalculator $calculator,
@@ -67,7 +69,11 @@ final class CompensationEquivalentEmployerCsvExporter extends AbstractSpreadshee
         $this->assertDoesNotMarkSourceTimesheets($query);
         $this->assertRateVisible($this->security, $query);
 
-        $result = $this->calculator->calculateAll($exportItems);
+        try {
+            $result = $this->calculator->calculateAll($exportItems);
+        } catch (CompensationUnavailableException $exception) {
+            return self::compensationUnavailableResponse($exception);
+        }
         $records = $result->getRecords();
         $summary = $this->reconciliationService->summarize($result, $query->getBegin(), $query->getEnd());
 

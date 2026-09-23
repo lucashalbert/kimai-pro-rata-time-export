@@ -93,6 +93,9 @@ registration, export extension points), and why each was chosen:
   be a self-contained document (own `<style>`), not `{% extends %}` Kimai's
   `export/layout.html.twig` — that app-level template pulls in front-end macros/asset loaders
   meant for Kimai's own configurable export templates.
+- Kimai's `ExportController` doesn't catch renderer exceptions (any throw = generic 500). A
+  user-facing export failure must be a `Service\CompensationUnavailableException`, which every
+  renderer turns into a 422 page; see `docs/kimai-version-notes.md` "Export errors".
 - Views/exports that disclose rates or compensation values should gate on the same
   permission Kimai's own export code uses for that
   (`App\Export\ColumnConverter::isRenderRate()`): `view_rate_own_timesheet` when the export

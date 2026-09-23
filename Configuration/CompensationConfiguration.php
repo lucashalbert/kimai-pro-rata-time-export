@@ -13,6 +13,9 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Configuration;
 
 use App\Configuration\SystemConfiguration;
 use App\Entity\ExportableItem;
+use App\Entity\UserPreference;
+use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
+use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 /**
  * Typed access to the plugin's own configuration (spec §7, §26).
@@ -53,7 +56,7 @@ final class CompensationConfiguration
      * through to a less specific level, because that would silently produce
      * a wrong number for whoever configured the override (spec §7, §32).
      *
-     * @throws \RuntimeException when no level has a usable value, or when any configured level is not a number greater than zero
+     * @throws CompensationUnavailableException when no level has a usable value, or when any configured level is not a number greater than zero
      */
     public function getBaseRate(ExportableItem $item): float
     {
@@ -72,7 +75,7 @@ final class CompensationConfiguration
             return $resolved;
         }
 
-        throw new \RuntimeException(
+        throw new CompensationUnavailableException(
             'Unable to generate compensation-equivalent report: Employer base rate is not configured.'
         );
     }
@@ -85,7 +88,7 @@ final class CompensationConfiguration
     {
         try {
             $this->getBaseRate($item);
-        } catch (\RuntimeException) {
+        } catch (CompensationUnavailableException) {
             return false;
         }
 
@@ -105,8 +108,20 @@ final class CompensationConfiguration
 
         yield 'project' => $project?->getMetaField(self::OVERRIDE_FIELD_NAME)?->getValue();
         yield 'customer' => $project?->getCustomer()?->getMetaField(self::OVERRIDE_FIELD_NAME)?->getValue();
-        yield 'user' => $item->getUser()?->getPreferenceValue(self::OVERRIDE_FIELD_NAME);
+        yield 'user' => self::rawPreferenceValue($item->getUser()?->getPreference(self::OVERRIDE_FIELD_NAME));
         yield 'global' => $this->configuration->find(self::KEY_BASE_RATE);
+    }
+
+    /**
+     * `UserPreference::getValue()` casts by its non-persisted type: once
+     * OverrideFieldDefinitionSubscriber has typed the preference `NumberType`
+     * in this request (as it has during an export), an unset (null) value
+     * reads as `0.0` and would be reported as invalid instead of unset. An
+     * untyped copy returns the stored value as-is.
+     */
+    private static function rawPreferenceValue(?UserPreference $preference): mixed
+    {
+        return null === $preference ? null : (clone $preference)->setType(TextType::class)->getValue();
     }
 
     private function assertPositive(mixed $value, string $level): float
@@ -114,7 +129,7 @@ final class CompensationConfiguration
         $rate = \is_numeric($value) ? (float) $value : \NAN;
 
         if (!($rate > 0.0) || !\is_finite($rate)) {
-            throw new \RuntimeException(\sprintf(
+            throw new CompensationUnavailableException(\sprintf(
                 'Unable to generate compensation-equivalent report: The %s employer base rate must be a number greater than zero.',
                 $level
             ));

@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed: a missing or unusable employer base rate or effective rate no longer produces a generic
+  500 on any compensation-equivalent export; the export shows the specific message (e.g.
+  "Employer base rate is not configured.") on a 422 page. An unset user-level Employer Base Rate
+  preference is now treated as not configured instead of as an invalid `0`.
 - Added the export/review surface: an HTML review renderer (`compensation-equivalent-review`) showing
   actual and compensation-equivalent values side by side plus a summary and warnings; an
   employer-facing CSV exporter (`compensation-equivalent-employer-csv`); an audit/reconciliation CSV

@@ -20,6 +20,7 @@ use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationCalculationResult;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarningReason;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationCalculator;
+use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
 use KimaiPlugin\ProRataTimeExportBundle\Service\DurationScaler;
 use KimaiPlugin\ProRataTimeExportBundle\Service\IntervalGenerator;
 use KimaiPlugin\ProRataTimeExportBundle\Service\RateResolver;
@@ -316,7 +317,7 @@ final class CompensationCalculatorTest extends TestCase
         $this->calculator->calculateAll([$good, $badRate]);
     }
 
-    public function testMissingBaseRatePropagatesAsRuntimeException(): void
+    public function testMissingBaseRatePropagatesAsCompensationUnavailableException(): void
     {
         $calculator = new CompensationCalculator(
             new RateResolver(),
@@ -326,7 +327,7 @@ final class CompensationCalculatorTest extends TestCase
         );
         $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 70);
 
-        $this->expectException(\RuntimeException::class);
+        $this->expectException(CompensationUnavailableException::class);
         $this->expectExceptionMessage('Employer base rate is not configured.');
 
         $calculator->calculate($item);
