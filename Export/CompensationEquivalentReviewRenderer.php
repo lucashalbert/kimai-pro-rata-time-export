@@ -58,6 +58,16 @@ final class CompensationEquivalentReviewRenderer implements RendererInterface
     }
 
     /**
+     * Groups this renderer under Kimai's "HTML" export dropdown. Without it,
+     * Kimai's ExportController falls back to the lowercased class name as the
+     * button group, rendering a standalone "compensationequivalentreview" button.
+     */
+    public function getType(): string
+    {
+        return 'html';
+    }
+
+    /**
      * @param ExportableItem[] $exportItems
      */
     public function render(array $exportItems, TimesheetQuery $query): Response
