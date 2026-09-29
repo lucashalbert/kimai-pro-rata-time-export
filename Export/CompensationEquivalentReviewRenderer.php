@@ -22,18 +22,13 @@ use Symfony\Component\HttpFoundation\Response;
 use Twig\Environment;
 
 /**
- * The review/summary screen (spec §19, §20): an HTML response shown on
- * Kimai's Export screen before a user downloads a compensation-equivalent
- * file, so actual and equivalent values are visible together before
- * committing to a download.
+ * The review/summary screen (spec §19, §20), shown before a user downloads a
+ * compensation-equivalent file. Gated on the rate-viewing permission
+ * (spec §18, §31): every row shows rates and monetary values.
  *
- * Gated on the rate-viewing permission (spec §18, §31): every row shows the
- * effective/base rate and both actual and equivalent monetary values.
- *
- * Returns a self-contained HTML document (own `<style>`, no Kimai layout
- * dependency) rather than extending Kimai's app-level `export/layout.html.twig`,
- * which pulls in front-end macros/asset loaders meant for Kimai's own
- * configurable export templates, not a plugin-owned static view.
+ * Returns a self-contained HTML document rather than extending Kimai's
+ * `export/layout.html.twig`, whose front-end macros/asset loaders are meant for
+ * Kimai's own configurable export templates.
  */
 final class CompensationEquivalentReviewRenderer implements RendererInterface
 {

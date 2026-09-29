@@ -27,15 +27,10 @@ use Symfony\Component\HttpFoundation\Response;
 
 /**
  * Spec §51: a single workbook with "Employer Timecard", "Reconciliation" and
- * "Summary" worksheets, built directly on OpenSpout's multi-sheet XLSX writer
- * — the same library `App\Export\Base\XlsxRenderer` uses — rather than a new
- * spreadsheet dependency. Kimai's own `ColumnConverter`/`TemplateInterface` machinery
- * (used by `XlsxRenderer`/`CsvRenderer`) assumes a user-configurable column
- * set resolved from entity getters; this export's columns are fixed
- * derived/computed values (equivalent start/end, factor, rounding
- * difference, ...) that do not exist as getters on `ExportableItem`, so that
- * machinery does not fit and is bypassed in favour of `AbstractSpreadsheetRenderer`'s
- * shared response-building only.
+ * "Summary" worksheets. Kimai's `ColumnConverter`/`TemplateInterface` machinery
+ * resolves columns from entity getters, which don't exist for these derived
+ * values, so it is bypassed and only `AbstractSpreadsheetRenderer`'s response
+ * building is reused.
  *
  * Gated on the rate-viewing permission (spec §18, §31).
  */

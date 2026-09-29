@@ -203,11 +203,9 @@ final class CompensationConfigurationTest extends TestCase
     }
 
     /**
-     * Spec §7: an invalid/non-positive override at any level is an error and
-     * MUST NOT fall through to a less specific level. Every level other than
-     * the one under test is left unconfigured, so a wrongly-implemented
-     * fallback would either resolve a *different* value or hit the
-     * "not configured" message instead of this level-specific one.
+     * Spec §7: an invalid override at any level MUST NOT fall through to a less
+     * specific level. Other levels are left unconfigured so a wrong fallback
+     * would surface the "not configured" message instead of this level's.
      */
     #[DataProvider('invalidOverrideLevels')]
     public function testInvalidOverrideThrowsWithoutFallingBackToALessSpecificLevel(string $level, float $invalidValue): void

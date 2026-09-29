@@ -29,16 +29,10 @@ use KimaiPlugin\ProRataTimeExportBundle\Model\Money;
 final class ReconciliationService
 {
     /**
-     * Aggregate derived records into the summary shown before export
-     * (spec §20, §48), including per-user totals and the rounding variance.
-     *
-     * When the export/query layer supplies the selected reporting period, that
-     * period is authoritative; otherwise this falls back to the records' actual
-     * extents. The employer base rate metadata is the common rate only when
-     * every record resolved to the same one (spec §7 hierarchy can legitimately
-     * produce a mix); see CompensationEquivalentSummary::getBaseRate().
-     * The generating user is left null here; populating it needs the request's
-     * authenticated user, which this records-only signature does not receive.
+     * A supplied reporting period is authoritative; otherwise falls back to the
+     * records' extents. Base rate is the common rate only when every record
+     * resolved to the same one (see CompensationEquivalentSummary::getBaseRate()).
+     * The generating user is left null: it needs the request's authenticated user.
      *
      * @param CompensationEquivalentRecord[]|CompensationCalculationResult $records
      */

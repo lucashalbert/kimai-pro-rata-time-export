@@ -16,18 +16,13 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\Exception\AccessDeniedException;
 
 /**
- * Gates a rate-bearing view/export on the same permission Kimai's own export
- * column rendering uses (spec §18, §31): `App\Export\ColumnConverter::isRenderRate()`
- * decides per-request whether rate columns are even shown, using
- * `view_rate_own_timesheet` when the export is scoped to a single user and
- * `view_rate_other_timesheet` otherwise. This mirrors that exact rule rather
- * than inventing a new permission.
+ * Mirrors `App\Export\ColumnConverter::isRenderRate()` (spec §18, §31):
+ * `view_rate_own_timesheet` when the export is scoped to a single user,
+ * `view_rate_other_timesheet` otherwise.
  *
- * Unlike ColumnConverter (which silently drops rate columns), a renderer using
- * this trait denies the whole request when the permission is missing: every
- * column in the review/audit/reconciliation output is rate-derived, so a
- * redacted version would be near-empty and risks a template omission
- * silently leaking a rate value instead.
+ * Unlike ColumnConverter (which silently drops rate columns), this denies the
+ * whole request: every column here is rate-derived, so a redacted version
+ * would be near-empty and risks a template omission leaking a rate.
  */
 trait ChecksRatePermission
 {

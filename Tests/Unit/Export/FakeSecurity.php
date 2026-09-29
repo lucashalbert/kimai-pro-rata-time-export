@@ -15,11 +15,8 @@ use Symfony\Bundle\SecurityBundle\Security;
 use Symfony\Component\Security\Core\User\UserInterface;
 
 /**
- * A test double for `Symfony\Bundle\SecurityBundle\Security`, standing in for
- * the real container-backed service so ChecksRatePermission can be exercised
- * without booting the Symfony kernel. Overrides only the two methods that
- * trait calls (getUser(), isGranted()); every other Security method is
- * unreachable from plugin code under test.
+ * Test double for `Symfony\Bundle\SecurityBundle\Security`; overrides only the
+ * two methods ChecksRatePermission calls (getUser(), isGranted()).
  */
 final class FakeSecurity extends Security
 {

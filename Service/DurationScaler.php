@@ -15,24 +15,17 @@ namespace KimaiPlugin\ProRataTimeExportBundle\Service;
  * Converts an actual recorded duration into a compensation-equivalent duration
  * at the employer base rate, and owns the single rounding step (spec §8, §10).
  *
- * Spec §10 requires the rounding policy to be centralised here and unit tested.
- * Default policy is nearest whole minute, halves rounding up: 29.4 -> 29,
- * 29.5 -> 30, 29.6 -> 30.
+ * Policy (spec §10): nearest whole minute, halves round up (29.5 -> 30).
  *
- * Spec §27/§28 require decimal or integer arithmetic rather than accumulating
- * binary float error, and forbid rounding intermediate values. Kimai stores
- * durations as integer seconds, so the input stays in seconds and minute
- * rounding happens exactly once, at the end.
+ * Spec §27/§28 forbid float error and intermediate rounding, so the input stays
+ * in integer seconds and rounding happens exactly once, at the end.
  */
 final class DurationScaler
 {
     private const SECONDS_PER_MINUTE = 60;
 
     /**
-     * The conversion factor: effective rate divided by employer base rate.
-     *
-     * Spec §35 requires factors greater than 1 to work (a record rated above
-     * the base rate expands rather than shrinks).
+     * Effective rate divided by base rate; may exceed 1 (spec §35).
      *
      * @throws \InvalidArgumentException when $baseRate is not greater than zero
      */
@@ -46,13 +39,7 @@ final class DurationScaler
     }
 
     /**
-     * Equivalent duration in whole minutes for an actual duration in seconds.
-     *
-     * Applies the rate ratio at full precision and rounds exactly once. A zero
-     * actual duration yields zero equivalent minutes and never a negative value
-     * (spec §14).
-     *
-     * @param int $actualSeconds recorded duration from ExportableItem::getDuration()
+     * A zero actual duration yields zero minutes, never negative (spec §14).
      */
     public function scaleToMinutes(
         int $actualSeconds,

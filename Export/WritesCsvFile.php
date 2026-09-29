@@ -16,9 +16,8 @@ use OpenSpout\Writer\CSV\Options;
 use OpenSpout\Writer\CSV\Writer;
 
 /**
- * Writes a UTF-8 CSV file with a deterministic column order and a header row
- * (spec §50), using the same OpenSpout writer Kimai's own
- * `App\Export\Base\CsvRenderer` uses, so field escaping is never hand-rolled.
+ * Writes a UTF-8 CSV file with a header row (spec §50) via OpenSpout, so field
+ * escaping is never hand-rolled.
  */
 trait WritesCsvFile
 {
