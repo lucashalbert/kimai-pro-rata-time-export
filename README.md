@@ -36,12 +36,6 @@ source record, most specific first:
 1. **Project** — an *Employer Base Rate* field on Kimai's Project edit form.
 2. **Customer** — an *Employer Base Rate* field on the Customer edit form.
 3. **User** — an *Employer Base Rate* field in the user's Kimai preferences.
-4. **Global default** — set in Kimai's `config/packages/local.yaml`:
-
-```yaml
-pro_rata_time_export:
-    base_rate: 150.00
-```
 
 The first level with a value wins; unset levels are skipped. The fields show the
 currency symbol Kimai uses for that entity (the customer's currency, or the
@@ -57,7 +51,7 @@ producing a silently wrong timecard.
 
 For each completed source timesheet, the plugin reads the recorded Kimai duration
 and the hourly rate stored on that timesheet record. It resolves the employer
-base rate through the project, customer, user, and global hierarchy, then
+base rate through the project, customer, and user hierarchy, then
 calculates:
 
 ```text
