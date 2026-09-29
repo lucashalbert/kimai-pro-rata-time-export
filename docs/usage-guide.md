@@ -146,7 +146,7 @@ The audit CSV keeps the full trail for each source record (source timesheet ID, 
 3,"Alice Example",2026-09-23,"Northwind Traders","Website Redesign",Development,"2026-09-23 09:17","2026-09-23 09:54",0:37,120.00,150.00,0.800000,"2026-09-23 09:17","2026-09-23 09:47",0:30,74.00,75.00,1.00
 ```
 
-Generating any of these never edits or marks-as-exported the underlying Kimai timesheets. Leave **Mark as exported** off unless you want that Kimai behavior.
+Generating any of these never edits or marks-as-exported the underlying Kimai timesheets. Leave **Mark as exported** off for Pro Rata Time Export reports; these exports fail when that Kimai option is enabled. Use Kimai's built-in export workflow separately if you need to mark source timesheets as exported.
 
 ## Part 2: Advanced usage
 
