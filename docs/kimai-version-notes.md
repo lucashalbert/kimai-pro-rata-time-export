@@ -309,8 +309,10 @@ controller builds an `ExportQuery` (a `TimesheetQuery` subclass adding
 *not* re-querying — use the array handed to `render()`.
 
 Kimai marks records exported only when the controller acts on
-`ExportQuery::isMarkAsExported()`; a renderer never triggers it. Satisfying
-spec §25 requires nothing more than not calling `ServiceExport::setExported()`.
+`ExportQuery::isMarkAsExported()` after a renderer returns. Satisfying spec §25
+therefore requires plugin renderers to abort when `isMarkAsExported()` is true;
+otherwise the controller would mark records exported after receiving the
+response.
 
 `TimesheetQuery` differs trivially: `setModifiedAfter()` returns `void` at 2.65
 instead of `$this`, and takes `\DateTimeInterface` instead of `\DateTime`. This
