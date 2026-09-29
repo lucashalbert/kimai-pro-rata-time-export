@@ -21,8 +21,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added the compensation calculator and reconciliation service, combining rate resolution, duration
   scaling, interval generation and exact-money arithmetic into per-record and per-batch results.
 - Added the hierarchical employer base rate: project, customer and user overrides (editable as
-  *Employer Base Rate* on the native Project/Customer forms and user preferences) over the global
-  `pro_rata_time_export.base_rate`, each validated `> 0` independently.
+  *Employer Base Rate* on the native Project/Customer forms and user preferences), each validated
+  `> 0` independently.
 - Added the export/review surface: an HTML review renderer (`compensation-equivalent-review`) showing
   actual and compensation-equivalent values side by side plus a summary and warnings; an
   employer-facing CSV exporter (`compensation-equivalent-employer-csv`); an audit/reconciliation CSV
@@ -34,8 +34,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Repository bootstrap; specification committed.
 - Recorded the Kimai 2.40.0 vs 2.65.0 API investigation in `docs/kimai-version-notes.md`;
   no breaking difference on any extension point the plugin uses.
-- Added the registrable plugin skeleton: bundle class, DI extension, `pro_rata_time_export.base_rate`
-  configuration wiring, and compensation domain service structure.
+- Added the registrable plugin skeleton: bundle class, DI extension, and compensation domain
+  service structure.
 - Added the exact-money value object used for currency calculations and display rounding.
 - Implemented the rate resolver for record-stored hourly rates with fail-closed handling for missing,
   invalid, and fixed-rate records.

@@ -36,7 +36,6 @@ final class CompensationConfiguration
      * user-level preference that carry a base rate override (spec §7).
      */
     public const OVERRIDE_FIELD_NAME = 'pro_rata_base_rate';
-}
 
     /**
      * The employer base rate at which equivalent time is expressed, resolved

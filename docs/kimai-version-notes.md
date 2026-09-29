@@ -206,30 +206,13 @@ way and this repository follows it.
 bound. `24000` therefore covers 2.40.0 through 2.65.0 and beyond. The supported
 *range* is documented in the README, not expressible in metadata.
 
-### DI extension and config
+### DI extension
 
 `App\Plugin\AbstractPluginExtension` (identical in both versions) extends
-Symfony's `Extension` and adds `registerBundleConfiguration()`, which merges the
-processed config into the container parameter `kimai.bundles.config`.
-`AppExtension` then folds that into `kimai.config` as flat dot-notation keys —
-and throws if a bundle's root key collides with a core one.
-
-Runtime access is through `App\Configuration\SystemConfiguration::find(string $key)`
-(`string|int|bool|float|null`), present and unchanged in both versions. Note
-`getString()`/`getFloat()` on `SystemConfiguration` are **private**; `find()` is
-the public accessor, so a plugin does its own type narrowing — which is what
-`Configuration/CompensationConfiguration.php` here does.
-
-The config root key derives from the Extension class name:
-`ProRataTimeExportExtension` → alias `pro_rata_time_export`, matching the
-spec §7/§26 shape:
-
-```yaml
-pro_rata_time_export:
-    base_rate: 150.00
-```
-
-read back as `find('pro_rata_time_export.base_rate')`.
+Symfony's `Extension`. This plugin's extension only loads its service
+definitions; it does not register a `pro_rata_time_export` configuration tree.
+The employer base rate is resolved from project/customer meta fields or a user
+preference, not from Kimai's `config/packages/local.yaml`.
 
 ### Routes
 
@@ -366,10 +349,6 @@ The conclusions above are not desk research alone. The skeleton was booted in th
 
 - `bin/console kimai:plugins` lists the plugin
   (`ProRataTimeExportBundle` / `Pro Rata Time Export` / `0.1.0` / requires `24000`).
-- `bin/console debug:container --parameter=kimai.config` resolves
-  `pro_rata_time_export.base_rate` to the value set in
-  `config/packages/local.yaml`, and to `null` when unset.
-
 One non-obvious trap surfaced while doing this, and is guarded by
 `Tests/Unit/BundleStructureTest.php`: `PluginManager` collects bundles through
 `#[TaggedIterator(PluginInterface::class)]`, which only sees classes registered
@@ -383,7 +362,7 @@ still resolves — a silent half-registration with no error anywhere.
 ## 7. Per-entity base rate override storage (spec §7 hierarchy)
 
 Investigation for the spec §7 hierarchical base rate override (project >
-customer > user > global default). Verdict: **Project and Customer support
+customer > user). Verdict: **Project and Customer support
 Kimai's native meta-field mechanism identically in both versions; `User` does
 not and uses a different native mechanism instead.** Confirmed against the
 same `2.40.0`/`2.65.0` image sources as above.
@@ -454,8 +433,7 @@ Identical in 2.40.0 and 2.65.0.
 
 Both mechanisms are equally "native, no migration, existing admin UI"; they
 just don't share one screen. `CompensationConfiguration::getBaseRate()` reads
-project, customer, user (untyped, see above), then the global
-`pro_rata_time_export.base_rate`.
+project, customer, then user (untyped, see above).
 
 ## Export errors
 

@@ -52,10 +52,17 @@ final class CompensationCalculatorTest extends TestCase
     }
 
 
-    private static function user(string $identifier): User
+    private static function user(string $identifier, ?string $baseRate = '150.00'): User
     {
         $user = new User();
         $user->setUserIdentifier($identifier);
+
+        if (null !== $baseRate) {
+            $user->addPreference(new UserPreference(
+                CompensationConfiguration::OVERRIDE_FIELD_NAME,
+                $baseRate
+            ));
+        }
 
         return $user;
     }
@@ -323,7 +330,14 @@ final class CompensationCalculatorTest extends TestCase
             new IntervalGenerator(),
             self::unconfigured()
         );
-        $item = self::timesheet('2026-09-03 09:00:00', '2026-09-03 10:00:00', 3600, 150.0, id: 70);
+        $item = self::timesheet(
+            '2026-09-03 09:00:00',
+            '2026-09-03 10:00:00',
+            3600,
+            150.0,
+            id: 70,
+            user: self::user('unconfigured', null)
+        );
 
         $this->expectException(CompensationUnavailableException::class);
         $this->expectExceptionMessage('Employer base rate is not configured.');

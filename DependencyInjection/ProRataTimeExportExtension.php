@@ -19,13 +19,6 @@ use Symfony\Component\DependencyInjection\Loader;
 /**
  * Symfony derives this extension's alias from the class name:
  * ProRataTimeExportExtension -> "pro_rata_time_export".
- *
- * registerBundleConfiguration() (from Kimai's AbstractPluginExtension) merges the
- * processed config into the "kimai.bundles.config" container parameter, which
- * AppExtension then folds into "kimai.config" as flat dot-notation keys readable
- * through App\Configuration\SystemConfiguration::find().
- *
- * @see docs/kimai-version-notes.md §3
  */
 final class ProRataTimeExportExtension extends AbstractPluginExtension
 {
@@ -35,9 +28,6 @@ final class ProRataTimeExportExtension extends AbstractPluginExtension
      */
     public function load(array $configs, ContainerBuilder $container): void
     {
-        $config = $this->processConfiguration(new Configuration(), $configs);
-        $this->registerBundleConfiguration($container, $config);
-
         $loader = new Loader\YamlFileLoader($container, new FileLocator(__DIR__ . '/../Resources/config'));
         $loader->load('services.yaml');
     }
