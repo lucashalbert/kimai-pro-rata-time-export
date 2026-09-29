@@ -30,9 +30,8 @@ So a record worked at €120/hr against a €150/hr Employer Base Rate has a fac
 1. Project override (Employer Base Rate field on the Project)
 2. Customer override (Employer Base Rate field on the Customer)
 3. User preference (Employer Base Rate in the user's preferences)
-4. Global fallback (`pro_rata_time_export.base_rate` in Kimai's `config/packages/local.yaml`)
 
-There is no built-in default. If none of the four is set for a record, the export fails with an explicit error instead of guessing. In this guide only the user preference is set for Part 1, and one project override is added in Part 2.
+There is no built-in default. If none of the three is set for a record, the export fails with an explicit error instead of guessing. In this guide only the user preference is set for Part 1, and one project override is added in Part 2.
 
 ## Part 1: Basic walkthrough
 
@@ -214,7 +213,7 @@ The CSV, audit CSV and XLSX exports for this same filter contain the same data i
 |---|---|
 | Actual / Recorded | Exactly what is stored in Kimai. Unmodified. |
 | Effective Rate | The hourly rate stamped on the source timesheet by Kimai when it was saved. |
-| Base Rate | The Employer Base Rate that resolved for that record (project → customer → user → global). |
+| Base Rate | The Employer Base Rate that resolved for that record (project → customer → user). |
 | Factor | Effective Rate ÷ Base Rate. Above 1 lengthens the time; below 1 shortens it. |
 | Equivalent Start / End / Duration | The derived compensation-equivalent interval. Start equals the real start. Duration is rounded to the whole minute, half-up. |
 | Difference | Equivalent Value − Actual Value, caused only by minute rounding. |

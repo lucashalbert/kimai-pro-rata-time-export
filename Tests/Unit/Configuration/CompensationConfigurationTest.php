@@ -11,8 +11,6 @@ declare(strict_types=1);
 
 namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Configuration;
 
-use App\Configuration\ConfigLoaderInterface;
-use App\Configuration\SystemConfiguration;
 use App\Entity\Customer;
 use App\Entity\CustomerMeta;
 use App\Entity\Project;
@@ -33,20 +31,9 @@ use Symfony\Component\Form\Extension\Core\Type\NumberType;
  */
 final class CompensationConfigurationTest extends TestCase
 {
-    private const GLOBAL_KEY = 'pro_rata_time_export.base_rate';
-
-    private static function configuration(?float $globalBaseRate): CompensationConfiguration
+    private static function configuration(): CompensationConfiguration
     {
-        $loader = new class implements ConfigLoaderInterface {
-            public function getConfigurations(): array
-            {
-                return [];
-            }
-        };
-
-        $settings = null === $globalBaseRate ? [] : [self::GLOBAL_KEY => $globalBaseRate];
-
-        return new CompensationConfiguration(new SystemConfiguration($loader, $settings));
+        return new CompensationConfiguration();
     }
 
     private static function record(?Project $project, ?User $user): Timesheet
@@ -110,15 +97,6 @@ final class CompensationConfigurationTest extends TestCase
         return $user;
     }
 
-    public function testResolvesGlobalValueWhenNoOverridesAreConfigured(): void
-    {
-        $config = self::configuration(150.0);
-        $record = self::record(self::projectWithOverride(null), self::userWithOverride(null));
-
-        self::assertSame(150.0, $config->getBaseRate($record));
-        self::assertTrue($config->hasBaseRate($record));
-    }
-
     public function testUnsetUserPreferenceTypedByItsDefinitionIsNotConfigured(): void
     {
         // Kimai's UserPreference::getValue() can cast null to 0.0 once
@@ -131,12 +109,12 @@ final class CompensationConfigurationTest extends TestCase
 
         $this->expectExceptionMessage('Employer base rate is not configured.');
 
-        self::configuration(null)->getBaseRate($record);
+        self::configuration()->getBaseRate($record);
     }
 
-    public function testUserOverrideBeatsGlobalValue(): void
+    public function testUserOverrideIsResolvedWhenNoProjectOrCustomerOverride(): void
     {
-        $config = self::configuration(150.0);
+        $config = self::configuration();
         $record = self::record(self::projectWithOverride(null), self::userWithOverride(135.0));
 
         self::assertSame(135.0, $config->getBaseRate($record));
@@ -144,7 +122,7 @@ final class CompensationConfigurationTest extends TestCase
 
     public function testCustomerOverrideBeatsUserOverride(): void
     {
-        $config = self::configuration(150.0);
+        $config = self::configuration();
         $customer = self::customerWithOverride(140.0);
         $record = self::record(self::projectWithOverride(null, $customer), self::userWithOverride(135.0));
 
@@ -153,7 +131,7 @@ final class CompensationConfigurationTest extends TestCase
 
     public function testProjectOverrideBeatsCustomerAndUserOverrides(): void
     {
-        $config = self::configuration(150.0);
+        $config = self::configuration();
         $customer = self::customerWithOverride(140.0);
         $record = self::record(self::projectWithOverride(180.0, $customer), self::userWithOverride(135.0));
 
@@ -162,7 +140,7 @@ final class CompensationConfigurationTest extends TestCase
 
     public function testInvalidCustomerOverrideThrowsEvenWhenProjectOverrideIsValid(): void
     {
-        $config = self::configuration(150.0);
+        $config = self::configuration();
         $customer = self::customerWithOverride(-140.0);
         $record = self::record(self::projectWithOverride(180.0, $customer), self::userWithOverride(135.0));
 
@@ -176,7 +154,7 @@ final class CompensationConfigurationTest extends TestCase
 
     public function testThrowsNotConfiguredWhenNothingIsConfiguredAtAnyLevel(): void
     {
-        $config = self::configuration(null);
+        $config = self::configuration();
         $record = self::record(self::projectWithOverride(null), self::userWithOverride(null));
 
         self::assertFalse($config->hasBaseRate($record));
@@ -198,8 +176,6 @@ final class CompensationConfigurationTest extends TestCase
         yield 'customer negative' => ['customer', -140.0];
         yield 'user zero' => ['user', 0.0];
         yield 'user negative' => ['user', -135.0];
-        yield 'global zero' => ['global', 0.0];
-        yield 'global negative' => ['global', -150.0];
     }
 
     /**
@@ -213,9 +189,8 @@ final class CompensationConfigurationTest extends TestCase
         $customer = self::customerWithOverride('customer' === $level ? $invalidValue : null);
         $project = self::projectWithOverride('project' === $level ? $invalidValue : null, $customer);
         $user = self::userWithOverride('user' === $level ? $invalidValue : null);
-        $globalBaseRate = 'global' === $level ? $invalidValue : null;
 
-        $config = self::configuration($globalBaseRate);
+        $config = self::configuration();
         $record = self::record($project, $user);
 
         self::assertFalse($config->hasBaseRate($record));
