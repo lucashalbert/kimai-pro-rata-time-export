@@ -246,7 +246,6 @@ The implementation SHOULD use a modular architecture similar to:
 src/
 ├── CompensationEquivalentBundle.php
 ├── Configuration/
-│   ├── Configuration.php
 │   └── CompensationConfiguration.php
 ├── Controller/
 │   └── ...

@@ -17,7 +17,7 @@ use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException
 use Symfony\Component\Form\Extension\Core\Type\TextType;
 
 /**
- * Typed access to the plugin's own configuration (spec §7, §26).
+ * Typed access to the plugin's employer base-rate settings (spec §7, §26).
  *
  * The employer base rate is resolved through a hierarchy, most specific wins
  * (spec §7): a project-level override, then a customer-level override, then a
