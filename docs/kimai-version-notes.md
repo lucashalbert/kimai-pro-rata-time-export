@@ -442,12 +442,13 @@ mechanism: `App\Entity\UserPreference` (own table
 `kimai2_user_preferences`, own admin surface — the user profile/preferences
 screen — registered the same way via a definition event), read through
 `User::getPreferenceValue(string $name, mixed $default = null, bool $allowNull = true): bool|int|float|string|null`.
-Same non-persisted-`type` caveat as meta fields, with one difference: unlike
-`MetaTableTypeTrait::getValue()`, `UserPreference::getValue()` casts even `null`,
-so when the definition subscriber has typed it `NumberType` in the same request
-(it has, during an export) an unset preference reads as `0.0`. The plugin
-therefore reads an untyped clone (`CompensationConfiguration::rawPreferenceValue()`)
-and validates/casts itself. Identical in 2.40.0 and 2.65.0.
+Same non-persisted-`type` caveat as meta fields, with one difference:
+`UserPreference::getValue()` may cast according to the non-persisted form type
+metadata that was applied earlier in the request, including casting `null` for
+numeric definitions. The plugin therefore reads an untyped clone
+(`CompensationConfiguration::rawPreferenceValue()`) and validates/casts itself,
+so an unset preference stays unset regardless of the current definition type.
+Identical in 2.40.0 and 2.65.0.
 
 Both mechanisms are equally "native, no migration, existing admin UI"; they
 just don't share one screen. `CompensationConfiguration::getBaseRate()` reads

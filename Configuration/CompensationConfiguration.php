@@ -113,11 +113,10 @@ final class CompensationConfiguration
     }
 
     /**
-     * `UserPreference::getValue()` casts by its non-persisted type: once
-     * OverrideFieldDefinitionSubscriber has typed the preference `NumberType`
-     * in this request (as it has during an export), an unset (null) value
-     * reads as `0.0` and would be reported as invalid instead of unset. An
-     * untyped copy returns the stored value as-is.
+     * `UserPreference::getValue()` can cast by its non-persisted form type,
+     * which is request-local metadata. An untyped copy returns the stored
+     * value as-is, so an unset preference is not mistaken for an invalid
+     * numeric zero.
      */
     private static function rawPreferenceValue(?UserPreference $preference): mixed
     {

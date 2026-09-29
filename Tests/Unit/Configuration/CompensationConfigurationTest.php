@@ -121,9 +121,9 @@ final class CompensationConfigurationTest extends TestCase
 
     public function testUnsetUserPreferenceTypedByItsDefinitionIsNotConfigured(): void
     {
-        // Kimai's UserPreference::getValue() casts null to 0.0 once the
-        // definition subscriber has typed it NumberType in the same request,
-        // which is the case during an export.
+        // Kimai's UserPreference::getValue() can cast null to 0.0 once
+        // request-local form type metadata marks the preference numeric.
+        // The resolver must read the stored value, not the cast value.
         $user = new User();
         $user->setUserIdentifier('alice');
         $user->addPreference((new UserPreference(CompensationConfiguration::OVERRIDE_FIELD_NAME, null))->setType(NumberType::class));
