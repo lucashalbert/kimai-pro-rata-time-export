@@ -124,7 +124,7 @@ fall back to the project rate.
 Fixed-rate records (`getFixedRate() !== null`, `getHourlyRate() === null`) have
 no hourly rate at all. Deriving one as `rate / (duration / 3600)` is possible but
 is a product decision about whether a fixed-rate record is even meaningful on a
-compensation-equivalent timecard — raise it rather than deciding silently.
+compensation-equivalent timecard; the plugin fails closed on them.
 
 ### 2.65-only: `App\Timesheet\RateCalculator\*`
 
@@ -150,9 +150,9 @@ compensation-equivalent timecard — raise it rather than deciding silently.
 3. The mode only affects how Kimai *writes* rates. Values already stored on
    existing records are read back the same way in both versions.
 
-It is worth documenting in the README that on 2.65 with
-`invoice.rounding_mode: decimal`, newly recorded timesheets carry rates Kimai
-rounded differently — an input-data property, not a plugin behaviour.
+Note that on 2.65 with `invoice.rounding_mode: decimal`, newly recorded
+timesheets carry rates Kimai rounded differently — an input-data property, not
+a plugin behaviour.
 
 ---
 
@@ -442,29 +442,18 @@ mechanism: `App\Entity\UserPreference` (own table
 `kimai2_user_preferences`, own admin surface — the user profile/preferences
 screen — registered the same way via a definition event), read through
 `User::getPreferenceValue(string $name, mixed $default = null, bool $allowNull = true): bool|int|float|string|null`.
-Same non-persisted-`type` caveat as meta fields, with one difference: unlike
-`MetaTableTypeTrait::getValue()`, `UserPreference::getValue()` casts even `null`,
-so when the definition subscriber has typed it `NumberType` in the same request
-(it has, during an export) an unset preference reads as `0.0`. The plugin
-therefore reads an untyped clone (`CompensationConfiguration::rawPreferenceValue()`)
-and validates/casts itself. Identical in 2.40.0 and 2.65.0.
+Same non-persisted-`type` caveat as meta fields, with one difference:
+`UserPreference::getValue()` may cast according to the non-persisted form type
+metadata that was applied earlier in the request, including casting `null` for
+numeric definitions. The plugin therefore reads an untyped clone
+(`CompensationConfiguration::rawPreferenceValue()`) and validates/casts itself,
+so an unset preference stays unset regardless of the current definition type.
+Identical in 2.40.0 and 2.65.0.
 
-This asymmetry (two entities via meta fields, one via user preferences) was
-escalated to and confirmed by the captain rather than assumed — see the
-`fm/kimai-base-rate-hierarchy` task history. Both mechanisms are equally
-"native, no migration, existing admin UI"; they just don't share one screen.
-
-### Consequence
-
-`EventSubscriber\OverrideFieldDefinitionSubscriber` defines the Project and
-Customer meta fields and the User preference so they appear in Kimai's native
-edit forms. `CompensationConfiguration::getBaseRate(ExportableItem $item)`
-reads those values, most specific first:
-`$item->getProject()?->getMetaField(...)`,
-`$item->getProject()?->getCustomer()?->getMetaField(...)`,
-`$item->getUser()?->getPreference(...)` (read untyped, see above), then the existing global
-`pro_rata_time_export.base_rate` config value. No new Kimai API beyond what's
-listed above; identical across 2.40.0–2.65.0.
+Both mechanisms are equally "native, no migration, existing admin UI"; they
+just don't share one screen. `CompensationConfiguration::getBaseRate()` reads
+project, customer, user (untyped, see above), then the global
+`pro_rata_time_export.base_rate`.
 
 ## Export errors
 

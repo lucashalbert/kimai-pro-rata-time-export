@@ -7,10 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed: the "Compensation Equivalent (Review)" renderer is now grouped under Kimai's HTML export
+  dropdown.
+- Added: currency symbol on the *Employer Base Rate* fields (Project, Customer, user preference).
 - Fixed: a missing or unusable employer base rate or effective rate no longer produces a generic
   500 on any compensation-equivalent export; the export shows the specific message (e.g.
   "Employer base rate is not configured.") on a 422 page. An unset user-level Employer Base Rate
   preference is now treated as not configured instead of as an invalid `0`.
+- Added the compensation calculator and reconciliation service, combining rate resolution, duration
+  scaling, interval generation and exact-money arithmetic into per-record and per-batch results.
+- Added the hierarchical employer base rate: project, customer and user overrides (editable as
+  *Employer Base Rate* on the native Project/Customer forms and user preferences) over the global
+  `pro_rata_time_export.base_rate`, each validated `> 0` independently.
 - Added the export/review surface: an HTML review renderer (`compensation-equivalent-review`) showing
   actual and compensation-equivalent values side by side plus a summary and warnings; an
   employer-facing CSV exporter (`compensation-equivalent-employer-csv`); an audit/reconciliation CSV
