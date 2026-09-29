@@ -25,8 +25,8 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
  *
  * The employer base rate is resolved through a hierarchy, most specific wins
  * (spec §7): a project-level override, then a customer-level override, then a
- * user-level override, then the global default below. Project/customer
- * overrides are read from a Kimai meta field (App\Entity\EntityWithMetaFields,
+ * user-level override. Project/customer overrides are read from a Kimai meta
+ * field (App\Entity\EntityWithMetaFields,
  * present on Project and Customer in both 2.40.0 and 2.65.0 — see
  * docs/kimai-version-notes.md §7). Kimai's User entity does not implement
  * EntityWithMetaFields; the user-level override is instead read from Kimai's

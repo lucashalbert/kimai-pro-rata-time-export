@@ -221,15 +221,9 @@ the public accessor, so a plugin does its own type narrowing — which is what
 `Configuration/CompensationConfiguration.php` here does.
 
 The config root key derives from the Extension class name:
-`ProRataTimeExportExtension` → alias `pro_rata_time_export`, matching the
-spec §7/§26 shape:
-
-```yaml
-pro_rata_time_export:
-    base_rate: 150.00
-```
-
-read back as `find('pro_rata_time_export.base_rate')`.
+`ProRataTimeExportExtension` → alias `pro_rata_time_export`. The employer base
+rate itself is configured through the project/customer meta fields and user
+preference described in §7, not through `config/packages/local.yaml`.
 
 ### Routes
 
@@ -364,9 +358,6 @@ The conclusions above are not desk research alone. The skeleton was booted in th
 
 - `bin/console kimai:plugins` lists the plugin
   (`ProRataTimeExportBundle` / `Pro Rata Time Export` / `0.1.0` / requires `24000`).
-- `bin/console debug:container --parameter=kimai.config` resolves
-  `pro_rata_time_export.base_rate` to the value set in
-  `config/packages/local.yaml`, and to `null` when unset.
 
 One non-obvious trap surfaced while doing this, and is guarded by
 `Tests/Unit/BundleStructureTest.php`: `PluginManager` collects bundles through
@@ -381,7 +372,7 @@ still resolves — a silent half-registration with no error anywhere.
 ## 7. Per-entity base rate override storage (spec §7 hierarchy)
 
 Investigation for the spec §7 hierarchical base rate override (project >
-customer > user > global default). Verdict: **Project and Customer support
+customer > user). Verdict: **Project and Customer support
 Kimai's native meta-field mechanism identically in both versions; `User` does
 not and uses a different native mechanism instead.** Confirmed against the
 same `2.40.0`/`2.65.0` image sources as above.
@@ -452,8 +443,7 @@ Identical in 2.40.0 and 2.65.0.
 
 Both mechanisms are equally "native, no migration, existing admin UI"; they
 just don't share one screen. `CompensationConfiguration::getBaseRate()` reads
-project, customer, user (untyped, see above), then the global
-`pro_rata_time_export.base_rate`.
+project, customer, then user (untyped, see above).
 
 ## Export errors
 
