@@ -11,13 +11,12 @@ declare(strict_types=1);
 
 namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Export;
 
-use App\Configuration\ConfigLoaderInterface;
-use App\Configuration\SystemConfiguration;
 use App\Entity\Activity;
 use App\Entity\Customer;
 use App\Entity\Project;
 use App\Entity\Timesheet;
 use App\Entity\User;
+use App\Entity\UserPreference;
 use App\Repository\Query\ExportQuery;
 use App\Repository\Query\TimesheetQuery;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
@@ -31,35 +30,25 @@ use KimaiPlugin\ProRataTimeExportBundle\Service\RateResolver;
  */
 trait ExportTestFixtures
 {
-    private static function calculator(?float $globalBaseRate = 150.0): CompensationCalculator
+    private static function calculator(): CompensationCalculator
     {
         return new CompensationCalculator(
             new RateResolver(),
             new DurationScaler(),
             new IntervalGenerator(),
-            self::configuration($globalBaseRate)
+            new CompensationConfiguration()
         );
-    }
-
-    private static function configuration(?float $globalBaseRate): CompensationConfiguration
-    {
-        $loader = new class implements ConfigLoaderInterface {
-            public function getConfigurations(): array
-            {
-                return [];
-            }
-        };
-
-        // null leaves the global base rate unset, like a fresh install.
-        $settings = null === $globalBaseRate ? [] : ['pro_rata_time_export.base_rate' => $globalBaseRate];
-
-        return new CompensationConfiguration(new SystemConfiguration($loader, $settings));
     }
 
     private static function user(string $identifier): User
     {
         $user = new User();
         $user->setUserIdentifier($identifier);
+        // Provide a default base rate preference since the global config default has been removed.
+        $user->addPreference(new UserPreference(
+            CompensationConfiguration::OVERRIDE_FIELD_NAME,
+            '150.00'
+        ));
 
         return $user;
     }

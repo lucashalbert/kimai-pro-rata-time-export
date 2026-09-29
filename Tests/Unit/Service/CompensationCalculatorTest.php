@@ -11,11 +11,10 @@ declare(strict_types=1);
 
 namespace KimaiPlugin\ProRataTimeExportBundle\Tests\Unit\Service;
 
-use App\Configuration\ConfigLoaderInterface;
-use App\Configuration\SystemConfiguration;
 use App\Entity\Project;
 use App\Entity\Timesheet;
 use App\Entity\User;
+use App\Entity\UserPreference;
 use KimaiPlugin\ProRataTimeExportBundle\Configuration\CompensationConfiguration;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationCalculationResult;
 use KimaiPlugin\ProRataTimeExportBundle\Model\CompensationWarningReason;
@@ -41,28 +40,17 @@ final class CompensationCalculatorTest extends TestCase
 
     protected function setUp(): void
     {
+        // Use a user-level configuration override for the test base rate.
+        // The calculator now requires project, customer, or user-level rates;
+        // the global config default has been removed.
         $this->calculator = new CompensationCalculator(
             new RateResolver(),
             new DurationScaler(),
             new IntervalGenerator(),
-            self::configuration(150.0)
+            new CompensationConfiguration()
         );
     }
 
-    private static function configuration(float $globalBaseRate): CompensationConfiguration
-    {
-        $loader = new class implements ConfigLoaderInterface {
-            public function getConfigurations(): array
-            {
-                return [];
-            }
-        };
-
-        return new CompensationConfiguration(new SystemConfiguration(
-            $loader,
-            ['pro_rata_time_export.base_rate' => $globalBaseRate]
-        ));
-    }
 
     private static function user(string $identifier): User
     {
@@ -98,6 +86,16 @@ final class CompensationCalculatorTest extends TestCase
         $record->setProject($project ?? (new Project())->setName('Project'));
         if (null !== $user) {
             $record->setUser($user);
+        } else {
+            // Provide a default user with a base rate preference since the global
+            // config default has been removed. Tests can override by passing a $user.
+            $defaultUser = new User();
+            $defaultUser->setUserIdentifier("user_{$id}");
+            $defaultUser->addPreference(new UserPreference(
+                CompensationConfiguration::OVERRIDE_FIELD_NAME,
+                '150.00'
+            ));
+            $record->setUser($defaultUser);
         }
         (new \ReflectionProperty(Timesheet::class, 'id'))->setValue($record, $id);
 
@@ -335,14 +333,7 @@ final class CompensationCalculatorTest extends TestCase
 
     private static function unconfigured(): CompensationConfiguration
     {
-        $loader = new class implements ConfigLoaderInterface {
-            public function getConfigurations(): array
-            {
-                return [];
-            }
-        };
-
-        return new CompensationConfiguration(new SystemConfiguration($loader, []));
+        return new CompensationConfiguration();
     }
 
     public function testCallingCalculateDirectlyOnARunningRecordThrows(): void

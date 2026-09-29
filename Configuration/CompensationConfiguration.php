@@ -11,7 +11,6 @@ declare(strict_types=1);
 
 namespace KimaiPlugin\ProRataTimeExportBundle\Configuration;
 
-use App\Configuration\SystemConfiguration;
 use App\Entity\ExportableItem;
 use App\Entity\UserPreference;
 use KimaiPlugin\ProRataTimeExportBundle\Service\CompensationUnavailableException;
@@ -20,32 +19,24 @@ use Symfony\Component\Form\Extension\Core\Type\TextType;
 /**
  * Typed access to the plugin's own configuration (spec §7, §26).
  *
- * SystemConfiguration::find() returns string|int|bool|float|null and its typed
- * getters are private, so narrowing happens here — see docs/kimai-version-notes.md §3.
- *
  * The employer base rate is resolved through a hierarchy, most specific wins
  * (spec §7): a project-level override, then a customer-level override, then a
- * user-level override, then the global default below. Project/customer
- * overrides are read from a Kimai meta field (App\Entity\EntityWithMetaFields,
- * present on Project and Customer in both 2.40.0 and 2.65.0 — see
- * docs/kimai-version-notes.md §7). Kimai's User entity does not implement
- * EntityWithMetaFields; the user-level override is instead read from Kimai's
- * separate UserPreference mechanism via User::getPreferenceValue(). The native
- * edit fields are registered by OverrideFieldDefinitionSubscriber.
+ * user-level override. Project/customer overrides are read from a Kimai meta
+ * field (App\Entity\EntityWithMetaFields, present on Project and Customer in
+ * both 2.40.0 and 2.65.0 — see docs/kimai-version-notes.md §7). Kimai's User
+ * entity does not implement EntityWithMetaFields; the user-level override is
+ * instead read from Kimai's separate UserPreference mechanism via
+ * User::getPreferenceValue(). The native edit fields are registered by
+ * OverrideFieldDefinitionSubscriber.
  */
 final class CompensationConfiguration
 {
-    private const KEY_BASE_RATE = 'pro_rata_time_export.base_rate';
-
     /**
      * Name shared by the project- and customer-level meta fields and by the
      * user-level preference that carry a base rate override (spec §7).
      */
     public const OVERRIDE_FIELD_NAME = 'pro_rata_base_rate';
-
-    public function __construct(private readonly SystemConfiguration $configuration)
-    {
-    }
+}
 
     /**
      * The employer base rate at which equivalent time is expressed, resolved
@@ -105,7 +96,6 @@ final class CompensationConfiguration
         yield 'project' => $project?->getMetaField(self::OVERRIDE_FIELD_NAME)?->getValue();
         yield 'customer' => $project?->getCustomer()?->getMetaField(self::OVERRIDE_FIELD_NAME)?->getValue();
         yield 'user' => self::rawPreferenceValue($item->getUser()?->getPreference(self::OVERRIDE_FIELD_NAME));
-        yield 'global' => $this->configuration->find(self::KEY_BASE_RATE);
     }
 
     /**

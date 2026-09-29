@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- **BREAKING**: The global `pro_rata_time_export.base_rate` configuration from Kimai's
+  `config/packages/local.yaml` has been removed. The employer base rate is now resolved exclusively
+  through project, customer, and user-level overrides. Installs that relied on the global default
+  must configure the rate at one of these three levels instead.
 - Fixed: the "Compensation Equivalent (Review)" renderer is now grouped under Kimai's HTML export
   dropdown.
 - Added: currency symbol on the *Employer Base Rate* fields (Project, Customer, user preference).
