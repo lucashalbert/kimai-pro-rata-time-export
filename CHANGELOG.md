@@ -7,6 +7,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [1.0.0] - 2026-09-29
+
 - **BREAKING**: The global `pro_rata_time_export.base_rate` configuration from Kimai's
   `config/packages/local.yaml` has been removed. The employer base rate is now resolved exclusively
   through project, customer, and user-level overrides. Installs that relied on the global default
