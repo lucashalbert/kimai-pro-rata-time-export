@@ -176,6 +176,14 @@ To validate the plugin manifest without a local PHP toolchain:
 docker run --rm -v "$PWD":/app -w /app composer:2 validate --strict --no-check-lock --no-check-publish
 ```
 
+## Releasing
+
+Maintainers publish a release from the **Actions** tab: run the **Release** workflow and enter
+the semantic version without a leading `v` (e.g. `1.2.0`). It creates the annotated tag `v1.2.0`
+on the selected branch and a GitHub Release whose notes combine the matching `CHANGELOG.md`
+section with GitHub's auto-generated notes. Move the `[Unreleased]` entries under the new
+version heading in `CHANGELOG.md` first.
+
 ## License
 
 MIT

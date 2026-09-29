@@ -1,0 +1,52 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release, without a leading "v" (e.g. 1.2.0)'
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    env:
+      VERSION: ${{ inputs.version }}
+      GH_TOKEN: ${{ github.token }}
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Validate version
+        run: |
+          if ! [[ "$VERSION" =~ ^[0-9]+\.[0-9]+\.[0-9]+(-[0-9A-Za-z.-]+)?$ ]]; then
+            echo "::error::Version must be semantic (e.g. 1.2.0), without a leading 'v'; got '$VERSION'"
+            exit 1
+          fi
+          if git ls-remote --exit-code --tags origin "refs/tags/v$VERSION" >/dev/null; then
+            echo "::error::Tag v$VERSION already exists"
+            exit 1
+          fi
+
+      - name: Create and push annotated tag
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$VERSION" -m "Release $VERSION"
+          git push origin "refs/tags/v$VERSION"
+
+      - name: Create GitHub Release
+        run: |
+          # Body = matching CHANGELOG.md section (if any), followed by
+          # GitHub's auto-generated notes from PRs merged since the last tag.
+          awk -v v="$VERSION" '
+            /^## \[/ { if (on) exit; on = index($0, "## [" v "]") == 1; next }
+            on
+          ' CHANGELOG.md > changelog-notes.md
+          prerelease=()
+          [[ "$VERSION" == *-* ]] && prerelease=(--prerelease)
+          gh release create "v$VERSION" --verify-tag --title "v$VERSION" \
+            --notes-file changelog-notes.md --generate-notes "${prerelease[@]}"
