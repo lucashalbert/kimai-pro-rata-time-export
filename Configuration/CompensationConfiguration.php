@@ -96,10 +96,6 @@ final class CompensationConfiguration
     }
 
     /**
-     * Candidate values, most specific first. A `null` project/customer/user
-     * short-circuits its own level to `null` via the nullsafe operator, which
-     * is treated the same as "not configured" below.
-     *
      * @return iterable<string, mixed>
      */
     private function overrides(ExportableItem $item): iterable

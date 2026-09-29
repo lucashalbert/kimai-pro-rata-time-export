@@ -21,15 +21,10 @@ use App\Entity\User;
  * Kimai timesheet. Never merged with another (spec §12) and always carrying its
  * source timesheet id (spec §29).
  *
- * The field set is enumerated by spec §19 (review UI) and spec §23 (audit export):
- * user, date, customer, project, activity, actual start/end/duration, effective
- * rate, base rate, factor, equivalent start/end/duration, actual value,
- * equivalent value, rounding difference and source id. The unrounded exact
- * equivalent minutes (spec §10, §21, §47) is also carried, disclosing exactly
- * what minute rounding occurred.
+ * Field set per spec §19 (review UI) and §23 (audit export), plus the unrounded
+ * equivalent minutes (spec §10, §21, §47) to disclose what rounding occurred.
  *
- * Immutable (spec §3.1): every property is readonly and warnings are attached
- * via withWarning(), which returns a new instance rather than mutating this one.
+ * Immutable (spec §3.1): withWarning() returns a new instance.
  */
 final class CompensationEquivalentRecord
 {

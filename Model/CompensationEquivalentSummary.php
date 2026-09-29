@@ -17,17 +17,8 @@ use App\Entity\User;
  * Aggregate view over a set of CompensationEquivalentRecord instances, plus the
  * warnings collected while building them.
  *
- * Spec §20 and §48 enumerate the contents: reporting period, user count, source
- * record count, actual total time, equivalent total time, actual compensation
- * value, equivalent compensation value, rounding variance and per-user totals.
- * Spec §21 requires the rounding variance to be reported, never hidden. Spec §61
- * additionally requires report metadata (plugin version, calculation version,
- * generation timestamp, base rate, generating user).
- *
- * Warnings that must survive to the summary: excluded running records (§15),
- * overlapping source records (§13), zero-duration records (§14) and
- * duration/timestamp disagreement (§9). ReconciliationService::summarize()
- * forwards every warning already attached to the input records, de-duplicated.
+ * Contents per spec §20, §48 and §61 (report metadata). Spec §21 requires the
+ * rounding variance to be reported, never hidden.
  *
  * Calculation versioning (spec §60): CALCULATION_VERSION starts at 1 for this
  * initial rounding/scaling algorithm (nearest-whole-minute, half up, via

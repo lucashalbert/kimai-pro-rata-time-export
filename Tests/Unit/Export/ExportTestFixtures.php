@@ -27,9 +27,7 @@ use KimaiPlugin\ProRataTimeExportBundle\Service\IntervalGenerator;
 use KimaiPlugin\ProRataTimeExportBundle\Service\RateResolver;
 
 /**
- * Fixture builders shared by the Export/ renderer tests, mirroring
- * Tests/Unit/Service/CompensationCalculatorTest.php's fixtures (real Kimai
- * entities, no database).
+ * Fixture builders shared by the Export/ renderer tests (real Kimai entities, no database).
  */
 trait ExportTestFixtures
 {
