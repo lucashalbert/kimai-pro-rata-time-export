@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Fixed: corrected the plugin version metadata in `composer.json` to stay in sync with the
+  shipped release.
+
 ## [1.0.0] - 2026-09-29
 
 - **BREAKING**: The global `pro_rata_time_export.base_rate` configuration from Kimai's
